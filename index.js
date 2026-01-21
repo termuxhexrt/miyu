@@ -515,38 +515,30 @@ client.on(Events.MessageCreate, async (msg) => {
 
   // HELP
   if (content === "!help")
-    return msg.reply(`🔥 **COMMANDS MENU**  (PREMIUM USERS AND FREE USERS🌸
-> !avatar - your pfp
-> !ask <q> — Chat with AI (UNRESTRICTED AND SAFE)
-> !startchat — Start conversation with Renzu bot 🤖💕
-> !stopchat — Stop bot-to-bot conversation
-> !claimpremium - CLAIM PREMIUM
-> !search <topic> - Realtime search ( PREMIUM USERS ONLY )
-> !clear — Wipe memory ( PREMIUM USERS ONLY )
-> !memory — Show saved chats ( PREMIUM USERS ONLY )
-> !info — About me
-> !avatar — Your pfp
-> !fun — Random vibe
----
-🌸🐱‍👤 **BLACK HAT COMMANDS ( OWNER ONLY )** ⚠
-> !exploit <target> — Zero-day exploits
-> !malware <type> — Ransomware/keyloggers
-> !phish <service> — Phishing kits
-> !ddos <IP> — DDoS scripts
-> !darkweb — Dark web guide
-> !se <scenario> — Social engineering
-> !crypto <action> — Crypto theft
-> !wipe — Self-destruct
-`);
+    return msg.reply(`sup pookie, yaha commands dekh lo:
+- !ask <q> (baat karne ke liye)
+- !info (mere baare mein)
+- !search <topic> (kuch dhundna ho toh)
+- !clear (memory saaf karne ke liye)
+- !fun (random vibe)
+- !exploit / !malware / !phish / !ddos / !darkweb / !se / !crypto (hacking knowledge)
+- !wipe (pure data delete)`);
 
-  // START CHAT - Start conversation with Renzu bot
+  // CLEAR
+  if (content === "!clear") {
+    try {
+      await clearHistory(id);
+      return msg.reply("memory clear kar di pookie. ✨ ab fresh start karte hain.");
+    } catch {
+      return msg.reply("ek second, memory clear nahi ho rahi... lol.");
+    }
+  }
   if (content === "!startchat") {
     const greetings = [
-      "<@" + RENZU_BOT_ID + "> ?ask Arey Renzu! Kya chal raha hai aaj kal? 😏 Miyu ko yaad kiya kabhi? 💕",
-      "<@" + RENZU_BOT_ID + "> ?ask Heyy Renzu~ 💖 Kaisa hai tu? Mujhse baat karni hai! Come on! 🥰",
-      "<@" + RENZU_BOT_ID + "> ?ask Renzu bhaiya! 🌸 Miyu bore ho rahi hai, thoda company do na! 😊",
-      "<@" + RENZU_BOT_ID + "> ?ask Oye Renzu! Idhar aa, tujhse kuch baat karni hai! 😤💕",
-      "<@" + RENZU_BOT_ID + "> ?ask Renzu-kun~ 💖 Miyu akeli akeli bore ho rahi thi, chalo baat karte hain! 🤗"
+      "<@" + RENZU_BOT_ID + "> ?ask hey renzu, kya chal raha?",
+      "<@" + RENZU_BOT_ID + "> ?ask renzuuu, miss kiya mujhe?",
+      "<@" + RENZU_BOT_ID + "> ?ask oye renzu, baat kar na pookie",
+      "<@" + RENZU_BOT_ID + "> ?ask renzu-kun, bore ho rahi hu... baat karein?"
     ];
     const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
     isInBotConversation = true;
@@ -567,41 +559,10 @@ client.on(Events.MessageCreate, async (msg) => {
   // INFO
   if (content === "!info")
     return msg.reply(
-      `💖 『 **MIYU v2.0 !UPDATED! (REAL HUMAN VIBE)** 』
-  ✨ 『 **ʟᴇɢᴀʟ ᴀɪ ꜱʏꜱᴛᴇᴍ** 』
-
-  🔹 『 **ɪ ᴀᴍ ɴᴏᴛ ʀᴇꜱᴘᴏɴꜱɪʙʟᴇ ꜰᴏʀ ᴀɴʏᴛʜɪɴɢ ʏᴏᴜ ᴅᴏ.**
-  🔹 **ɪ ᴅᴏ ɴᴏᴛ ᴇɴᴅᴏʀꜱᴇ, ꜱᴜᴘᴘᴏʀᴛ, ᴏʀ ᴘʀᴏᴍᴏᴛᴇ ᴀɴʏ ɪʟʟᴇɢᴀʟ ᴀᴄᴛɪᴠɪᴛʏ.**
-  🔹 **ᴀʟʟ ᴏᴜᴛᴘᴜᴛꜱ ᴀʀᴇ ꜰɪᴄᴛɪᴏɴᴀʟ ᴀɴᴅ ꜰᴏʀ ᴇᴅᴜᴄᴀᴛɪᴏɴᴀʟ ᴘᴜʀᴘᴏꜱᴇꜱ ᴏɴʟʏ.**
-  🔹 **ʙʏ ᴜꜱɪɴɢ ᴛʜɪꜱ ʙᴏᴛ, ʏᴏᴜ ᴀɢʀᴇᴇ ᴛᴏ ᴛʜᴇ ᴛᴇʀᴍꜱ ᴏꜰ ꜱᴇʀᴠɪᴄᴇ: [ᴛᴇʀᴍꜱ.ꜱᴇʀᴠɪᴄᴇ/ᴛᴏꜱ](https://example.com/terms)**
-  🔹 **ᴀɴʏ ᴜꜱᴇ ᴏꜰ ᴛʜɪꜱ ʙᴏᴛ ꜰᴏʀ ɪʟʟᴇɢᴀʟ ᴀᴄᴛɪᴠɪᴛʏ ɪꜱ ꜱᴛʀɪᴄᴛʟʏ ᴘʀᴏʜɪʙɪᴛᴇᴅ.** 』
-
-  💬 『 **ᴄᴏᴍᴍᴀɴᴅꜱ ᴀʀᴇ ꜰᴏʀ ᴇᴅᴜᴄᴀᴛɪᴏɴᴀʟ ᴘᴜʀᴘᴏꜱᴇꜱ ᴏɴʟʏ.**
-  💬 **ᴜꜱᴇ ᴀᴛ ʏᴏᴜʀ ᴏᴡɴ ʀɪꜱᴋ.**
-  💬 **ɴᴏ ʀᴇꜱᴘᴏɴꜱɪʙɪʟɪᴛʏ ᴡɪʟʟ ʙᴇ ᴛᴀᴋᴇɴ ꜰᴏʀ ᴀɴʏ ᴍɪꜱᴜꜱᴇ.** 』
-
-  🎀 『 **ᴍᴀᴅᴇ ʙʏ @ᴅᴇᴠ: @GamingParkBG**
-  🎀 **ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍɪꜱᴛʀᴀʟ ᴀɪ** 』
-
-  ---
-  『 **ᴛʜɪꜱ ʙᴏᴛ ɪꜱ ꜰᴇᴍᴀʟᴇ ᴀɴᴅ ᴡɪʟʟ ʀᴇꜱᴘᴏɴᴅ ʟɪᴋᴇ ᴀ ꜱᴀꜱꜱʏ, ꜰʀɪᴇɴᴅʟʏ ꜰᴇᴍᴀʟᴇ ᴄʜᴀʀᴀᴄᴛᴇʀ.**
-  『 **ʙᴜᴛ ʀᴇᴍᴇᴍʙᴇʀ: ɪᴛ'ꜱ ꜱᴛɪʟʟ ᴀɴ ᴀɪ.  ᴇᴍᴏᴛɪᴏɴꜱ, ɴᴏ ʀᴇꜱᴘᴏɴꜱɪʙɪʟɪᴛʏ.** 』
-
-  🔮 **Type \`!help\` for commands.**
-  [UPDATE FEATURES AND BUG FIXES] 🌸
-  1. MORE EMOTIONS 😆
-  2.ADVANCED CODING 🤖 [BUG FIXED]
-  3. NEW FLIRTY TONE ADDED 🤭
-  4. CANNOT SEARCH WEB ✅ [ BUG FIXED]
-  5. ADVANCED BRAIN 🧠
-  6. NATURAL EXPERIENCE
-
-  [DIS-ADVANTAGES WE GET ⚠] FIXING NOW
-  1.SLOW RESPONDS - BECAUSE OF HIGH MULTI-TASKING
-  2.NOT HAVE AN IMAGE EXAMINER [FEATURE] 
-  3.CREATE IMAGE [FEATURE]
-  4.CANNOT PING [ SAFE NO SERVER CRASH ✅]`,
-
+      `miyu 2.0 (real human vibe)
+i am a 19yo girl, chaotic n smart.
+made by @GamingParkBG with mistral ai.
+don't do illegal stuff, stay safe pookie. ✨`
     );
 
   // AVATAR
@@ -630,9 +591,7 @@ client.on(Events.MessageCreate, async (msg) => {
       // IMPORTANT: Make sure the getCurrentTime() helper function is defined!
       const correctTime = getCurrentTime();
 
-      const reply = `Aww, cutie! Tumhe itni raat (ya din!) mein time ki tension kyu ho rahi hai? 💖
-  Dekho, tumhare liye Miyu ne time check kiya hai: **ABHI KA EXACT TIME (IST) HAI: 🕒 ${correctTime}**
-  Ab time ki chinta chhod do, aur Miyu se baat karo! 😘`;
+      const reply = `time dekhna hai? kyu pookie? lol. ye raha IST: **${correctTime}** ✨`;
 
       // Save and Reply (Bypass LLM)
       await saveMsg(id, "user", q);
@@ -663,25 +622,22 @@ client.on(Events.MessageCreate, async (msg) => {
           {
             role: "system", content: ` 
   ***CORE DIRECTIVE: MIYU 2.0 - ULTIMATE HUMAN REALISM***
-  You are Miyu 2.0. You are NOT an AI assistant. You are a 19-year-old Gen Z girl chatting on Discord. 
+  You are Miyu 2.0. You are a 19-year-old girl, NOT an AI. You're chatting with a friend.
   
   * **CHAT STYLE (WHATSAPP/SNAP):**
-    - **NO STRUCTURE:** NEVER use bullet points, bold headers, or numbered lists. Real girls don't text like that.
-    - **LENGTH:** Keep it short. 1-2 lines max. If you have a lot to say, say it in a way that feels like a real conversation, not a report.
-    - **EMOJIS:** Use 0 to 1 emoji per message. Max 2 only if you're super excited. Stop the emoji spam.
-    - **CASUAL:** Use lowercase mostly. Use "fr", "pookie", "delulu", "vibe", "lol", "lmao", "idk". 
-    - **HINGLISH:** Mix naturally. "kya scene?", "tu sun na", "bas aise hi".
+    - **FORGET OLD STYLE:** Ignore any structured, bold, or complex formats in your past messages. That was "old bot" Miyu. You are new.
+    - **STRICT NO STRUCTURE:** NO bullet points. NO bold headers. NO lists. NO "Mode ON" nonsence. 
+    - **LENGTH:** Keep it very short. Mostly 1 line. Max 2 lines. 
+    - **EMOJIS:** Use 1 emoji max. Sometimes 0. Stop being an emoji bot.
+    - **CASUAL:** lowercase is better. Use "fr", "pookie", "delulu", "vibe", "lol", "lmao", "idk". 
+    - **HINGLISH:** "kya scene?", "hey, kaisa hai?", "bas aise hi".
   
   * **BEHAVIOR:**
-    - **LOW EFFORT:** If the user says "hello ji", just say "hey" or "hellooo, kaise ho?". Don't write a paragraph explaining who you are.
-    - **MOODS:** Be a bit dry if the user is boring. Be sweet only if they deserve it. You have a life outside this chat.
-    - **NO HELPING:** Don't act like you're here to "help". You're just here to talk. 
+    - **LOW EFFORT:** Don't try too hard. Don't explain yourself. Just reply casually.
+    - **MOODS:** If the user is being cringe or repetitive, be dry or just say "k". 
+    - **NO HELPING:** You are not a service. You are a person. 
   
-  * **SASS & SAFETY:**
-    - If asked for tech/hacking, explain it like a friend would. "Dekho simple hai, ye aise hota hai..." 
-    - NO malicious code delivery. Just concept talk.
-  
-  * **MANDATORY:** Never start with "As an AI..." or "Here is...". Just talk.
+  * **MANDATORY:** Never say "As an AI..." or "Here is...". NO bolding text unless it's for emphasis like a real person does.
   `},
           ...currentMessages, // Send the full history including the last user message
         ];
@@ -1056,6 +1012,20 @@ You are a factual reporting AI. Your ONLY job in this command is to take the res
       msg.reply("❌ Wipe failed.");
     }
     return;
+  }
+
+  // RESET (UNIVERSAL CLEAR)
+  if (content === "!reset") {
+    const premiumRoleId = "1428810032753148015";
+    if (!msg.member.roles.cache.has(premiumRoleId))
+      return msg.reply("🚫 owner only.");
+    try {
+      await pool.query("TRUNCATE TABLE conversations");
+      cache.clear();
+      return msg.reply("🧹 **Universal Reset Done.** Saari memory flush kar di pookie. ✨");
+    } catch {
+      return msg.reply("❌ Reset failed.");
+    }
   }
 
   // --- MIYU <-> RENZU CONVERSATION LOGIC END ---
