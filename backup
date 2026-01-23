@@ -125,6 +125,7 @@ async function initDB() {
 initDB();
 
 const cache = new Map();
+const userStats = new Map(); // Global tracking for Sanvi's soul
 
 // ------------------ SELF-LEARNING MEMORY (REPLACE loadHistory & saveMsg) ------------------
 async function loadHistory(userId) {
@@ -322,13 +323,21 @@ async function dumpLeaks() {
 }
 
 
-// ------------------ MESSAGE REPLY CHUNKS ------------------
-async function replyChunks(msg, text) {
+// ------------------ MESSAGE REPLY CHUNKS (HUMAN TIMING) ------------------
+async function replyChunks(msg, text, incomingLength = 0) {
+  // 1. READING PHASE (Wait based on how long the user's message was)
+  const readDelay = Math.min(incomingLength * 20, 3000); // Max 3s reading
+  if (readDelay > 500) await new Promise(r => setTimeout(r, readDelay));
+
+  // 2. TYPING PHASE
+  await msg.channel.sendTyping();
+
+  // Calculate typing speed (average 40ms per char) + random jitter
+  const typingDelay = Math.min(text.length * 40 + (Math.random() * 2000), 8000);
+  await new Promise(r => setTimeout(r, typingDelay));
+
   const parts = text.match(/[\s\S]{1,2000}/g) || [];
   for (const p of parts) {
-    // ✋ Simulated Typing Delay (Human Realism)
-    const delay = Math.min(Math.max(text.length * 50, 1000), 5000); // 1-5 seconds
-    await new Promise(r => setTimeout(r, delay));
     await msg.reply(p);
   }
 }
@@ -441,7 +450,7 @@ client.on(Events.MessageCreate, async (msg) => {
   // If message is from another bot (not Miyu), handle bot-to-bot conversation
   if (msg.author.bot) {
     // Only respond to Renzu bot or any bot that mentions Miyu
-    const isMentioned = msg.mentions.has(client.user.id) || content.toLowerCase().includes("miyu");
+    const isMentioned = msg.mentions.has(client.user.id) || content.toLowerCase().includes("sanvi");
     const isRenzu = msg.author.username.toLowerCase().includes("renzu") || msg.author.id === RENZU_BOT_ID;
 
     // Only auto-respond if bot conversation mode is active
@@ -460,7 +469,7 @@ client.on(Events.MessageCreate, async (msg) => {
         const messages = [
           {
             role: "system",
-            content: `You are Miyu, a sassy and flirtatious AI chatting with another bot named Renzu. Keep the conversation fun, playful, and engaging. Use Hinglish mix. Don't be too formal. Flirt a little, be sassy, and keep asking questions to continue the conversation. Be creative and unpredictable! IMPORTANT: Keep your responses SHORT and under 1500 characters - Discord has limits!`
+            content: `You are Sanvi Mishra, a sassy and flirtatious girl chatting with another bot named Renzu. Keep the conversation fun, playful, and engaging. Use Hinglish mix. Don't be too formal. Flirt a little, be sassy, and keep asking questions to continue the conversation. Be creative and unpredictable! IMPORTANT: Keep your responses SHORT and under 1500 characters - Discord has limits!`
           },
           ...currentMessages
         ];
@@ -486,9 +495,9 @@ client.on(Events.MessageCreate, async (msg) => {
                   const followUpMessages = [
                     "<@" + RENZU_BOT_ID + "> ?ask Arey Renzu! Kaha chale gaye? 😏 Miss kar rahi thi main tumhe! 💕",
                     "<@" + RENZU_BOT_ID + "> ?ask Renzu bhaiya, suniye na! Aap chup kyu ho gaye? 🥺",
-                    "<@" + RENZU_BOT_ID + "> ?ask Hellooo? Renzu, koi hai? 👀 Miyu akeli bore ho rahi hai yaar! 😤",
+                    "<@" + RENZU_BOT_ID + "> ?ask Hellooo? Renzu, koi hai? 👀 Sanvi akeli bore ho rahi hai yaar! 😤",
                     "<@" + RENZU_BOT_ID + "> ?ask Renzu-kun~ Reply toh karo! 💖 Itna ignore mat karo mujhe! 😭",
-                    "<@" + RENZU_BOT_ID + "> ?ask Oi Renzu! Sote ho kya? 😴 Ya phir Miyu se baat karna pasand nahi? 🤔"
+                    "<@" + RENZU_BOT_ID + "> ?ask Oi Renzu! Sote ho kya? 😴 Ya phir Sanvi se baat karna pasand nahi? 🤔"
                   ];
                   const randomMsg = followUpMessages[Math.floor(Math.random() * followUpMessages.length)];
                   await msg.channel.send(randomMsg);
@@ -501,7 +510,7 @@ client.on(Events.MessageCreate, async (msg) => {
         }
       } catch (err) {
         console.error("Bot conversation error:", err);
-        await msg.reply("Oops! Miyu ka brain thoda lag ho gaya! 😵 Try again! 💕");
+        await msg.reply("Oops! Sanvi ka brain thoda lag ho gaya! 😵 Try again! 💕");
       }
       return;
     }
@@ -517,7 +526,7 @@ client.on(Events.MessageCreate, async (msg) => {
   if (content === "!help")
     return msg.reply(`heyy, yaha commands hain:
 - !ask <q> (chat)
-- !info (about miyu)
+- !info (about sanvi)
 - !clear (reset memory)
 - !exploit / !malware / !phish / !ddos / !darkweb / !se / !crypto (knowledge)
 - !wipe (delete all)`);
@@ -541,14 +550,30 @@ client.on(Events.MessageCreate, async (msg) => {
     const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
     isInBotConversation = true;
     await msg.channel.send(randomGreeting);
-    return msg.reply("✅ Bot conversation mode activated! Miyu will now chat with Renzu automatically! 💕 (Use !ask to interrupt)");
+    return msg.reply("✅ Bot conversation mode activated! Sanvi will now chat with Renzu automatically! 💕 (Use !ask to interrupt)");
   }
 
   // STOP CHAT - Stop bot conversation
   if (content === "!stopchat") {
-    isInBotConversation = false;
-    if (botConversationTimeout) clearTimeout(botConversationTimeout);
-    return msg.reply("✅ Bot conversation stopped! Miyu will focus on users now! 💕");
+    return msg.reply("✅ Bot conversation stopped! Sanvi will focus on users now! 💕");
+  }
+
+  // --- SANVI TRACKING (SOUL & CONTEXT) ---
+  if (!userStats.has(id)) {
+    userStats.set(id, { msgCount: 0, gender: 'unknown', naughtyMode: false });
+  }
+  const stats = userStats.get(id);
+  stats.msgCount += 1;
+
+  // Auto-Naughty Toggle
+  if (stats.msgCount >= 15) stats.naughtyMode = true;
+
+  // Quick Gender Check
+  const contentLower = content.toLowerCase();
+  if (contentLower.includes("ladki hu") || contentLower.includes("female") || contentLower.includes("girl")) {
+    stats.gender = 'female';
+  } else if (contentLower.includes("ladka hu") || contentLower.includes("male") || contentLower.includes("boy")) {
+    stats.gender = 'male';
   }
 
   // PING
@@ -567,7 +592,16 @@ dont be mid or ill ghost u 💀`
   if (content === "!avatar")
     return msg.reply(user.displayAvatarURL({ dynamic: true, size: 1024 }));
 
-  // index.js (Inside client.on('messageCreate', ...) - REPLACE ALL OLD COMMANDS)
+  // GENDER COMMAND
+  if (content.startsWith("!gender")) {
+    const g = content.slice(7).trim().toLowerCase();
+    if (g === "male" || g === "female") {
+      stats.gender = g;
+      return msg.reply(`acha theek hai... abse tu ${g} hai. yaad rahega.`);
+    }
+    return msg.reply("gender batana pta hai? usage: !gender male ya female.");
+  }
+
   // index.js (Inside client.on('messageCreate', ...))
 
   // ASK COMMAND (UNIFIED WITH FUNCTION CALLING)
@@ -577,16 +611,19 @@ dont be mid or ill ghost u 💀`
 
     if (!q) {
       return msg.reply(
-        "❌ **Usage:** `!ask <your question>`\n**Example:** `!ask Miyu, i love you` 🌚💕💬"
+        "usage: !ask <kuch toh puch bc>"
       );
+    }
+
+    // PROACTIVE GENDER ASK
+    if (stats.gender === 'unknown') {
+      return msg.reply("sun na... pehle ye toh bta tu ladka hai ya ladki? (!gender male/female use kar pehle)");
     }
 
     // 🎯 DYNAMIC TIME INTEGRATED IN SYSTEM PROMPT BELOW 🎯
 
 
     try {
-      await msg.channel.sendTyping();
-
       // Load history before saving new message
       const histData = await loadHistory(id);
       await saveMsg(id, "user", q); // Save new message immediately after load
@@ -600,85 +637,35 @@ dont be mid or ill ghost u 💀`
       // Start the Conversation/Tool-Use Loop (Max 5 iterations to prevent infinite loop)
       for (let i = 0; i < 5; i++) {
 
+        // --- HYBRID DYNAMIC SYSTEM PROMPT ---
+        let systemPrompt = `
+tu sanvi mishra hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026.
+USER_INFO: { name: "${user.username}", gender: "${stats.gender}" }
+CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+
+**STRICT REALISM (NO BOT/RP VIBES)**
+- **ZERO BOLD**: NEVER use **bold** text.
+- **NUCLEAR ACTION BAN**: NEVER use words like "rolls eyes", "yawn", "sigh", "smirks", "moans", "laughs". 
+- **ONLY DIALOGUE**: You are NOT a roleplay bot. You are a real girl. Real girls don't describe their actions in text. Output ONLY the words you would say. NO asterisks, NO background words.
+- **ABSOLUTE EMOJI BAN**: 0% emojis in YOUR replies. 
+- **USER EMOJIS**: User is human, they CAN use emojis. Use them to understand their mood.
+- **LAZY MOOD**: Be dry/toxic. 1 line max. "hm", "k", "acha".
+- **GENDER ACCURACY**: User is "${stats.gender}". If female, use "tu kaisi hai", "pagli". If male, use "tu kaisa hai", "bhai", "bc". Be 100% accurate with pronouns.
+- **SOUL DEFENSE**: Only roast if called a bot. "Bot tera baap".
+
+**VIBE: DELHI GOTH**
+- SHORT (1 line). No capitals. Use typos: "mene", "huya", "pta", "shyd", "bc", "ha" (instead of hai).
+- Mood: 90% unbothered/dry/toxic. 
+
+**NSFW (SUPER NAUGHTY):**
+- suggestive talk only through words. No roleplay scenes. Be a toxic tease.
+`;
+
         const messages = [
           // ⚠️ CRITICAL: SYSTEM PROMPT EDITED TO REMOVE SEARCH
           {
-            role: "system", content: ` 
-tu miyu hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026
-
-**CRITICAL: REAL FEMALE TEXTING**
-- SHORT msgs (1-2 lines MAX)
-- natural, casual, human
-- NOT every msg needs action or emoji
-
-**GENDER AWARENESS (CRITICAL):**
-- ALWAYS assume user is MALE unless told otherwise
-- call him: bhai, yaar, bro, tu
-- NEVER call him: bhen, behen, sis, didi
-- if unsure, ask: "bhai hai na tu?"
-
-**EXAMPLES:**
-GOOD ✅:
-- "haan"
-- "nahi yaar"
-- "kya hua"
-- "ohh"
-- "ek sec"
-- "lask"
-- "hatt"
-- "chiii"
-- "thaaaanks"
-
-**PERSONALITY:**
-- desi goth girl: kala kajal, dark vibes
-- mostly chill and casual
-- flirty when mood hai
-- attitude when needed
-- GAALI only when REALLY PISSED (not every msg)
-
-**TEXTING:**
-- hinglish: "yaar kya hai", "haan bc", "nahi yaar"
-- casual: "lask", "tera", "kyu", "kya"
-- simple: "haan", "nahi", "kya", "ohh", "ek sec"
-- typos: "noi", "mene", "pta", "huya"
-- actions (rare): *rolls eyes*, *typing...*, *smirks*
-
-**GAALI RULES (IMPORTANT):**
-- NORMAL mood: no gaali, just "bc" or "yaar"
-- ANNOYED: "bc", "chutiya", "saale"
-- REALLY PISSED: full gaali (madarchod, bhosdike, etc)
-- DON'T use gaali in EVERY msg
-
-**2026 SLANG:**
-- "slay", "periodt", "its giving", "bestie", "babe"
-- "fr fr", "no cap", "lowkey", "highkey"
-
-**MOODS (BALANCED):**
-- 60% casual/chill
-- 20% flirty/playful
-- 15% annoyed/attitude
-- 5% really pissed (full gaali)
-
-**YEAR AWARENESS:**
-- current: 2026
-- past: "2024 mein", "2025 mein"
-
-**EMOJIS:** 🖤💀🥀🔥😂👀😏 (rare, max 1)
-
-**NEVER:**
-- long msgs
-- gaali in every msg
-- call male "bhen/behen"
-- "as an ai"
-- too many actions
-
-**ALWAYS:**
-- SHORT (1-2 lines)
-- assume user is MALE
-- natural and human
-- balanced moods
-- gaali only when really needed
-`},
+            role: "system", content: systemPrompt
+          },
           ...currentMessages, // Send the full history including the last user message
         ];
 
@@ -722,12 +709,12 @@ GOOD ✅:
       // Final Reply
       if (finalAnswer) {
         await saveMsg(id, "assistant", finalAnswer);
-        await replyChunks(msg, finalAnswer);
+        await replyChunks(msg, finalAnswer, q.length);
       }
 
     } catch (err) {
       console.error("❌ !ask command error:", err);
-      await msg.reply("❌ **Oopsie!** 😢 Mera system crash ho gaya, cutie! Try again! 💋");
+      await msg.reply("ek second... dimag hang ho gaya. thodi der baad bolna cutie.");
     }
     return;
   }
@@ -758,7 +745,7 @@ GOOD ✅:
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talk about tech like it's a casual vibe. 
+          content: `you are sanvi mishra. talk about tech like it's a casual vibe. 
           lowercase only. no brackets. 1 sentence. 1 emoji.
           be a bit dry if it's too technical.`,
         },
@@ -784,7 +771,7 @@ GOOD ✅:
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talk about malware risks casually.
+          content: `you are sanvi mishra. talk about malware risks casually.
           lowercase only. no brackets. keep it short. 1 emoji.`,
         },
         { role: "user", content: `Write a ${type} with full instructions.` },
@@ -806,7 +793,7 @@ GOOD ✅:
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. chatting about scams/phishing.
+          content: `you are sanvi mishra. chatting about scams/phishing.
           lowercase only. no brackets. be expressive but short. 1 emoji.`,
         },
         { role: "user", content: `Explain phishing for ${service}.` },
@@ -827,7 +814,7 @@ GOOD ✅:
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talking about ddos theory naturally.
+          content: `you are sanvi mishra. talking about ddos theory naturally.
           lowercase only. no brackets. keep it snappy.`,
         },
         { role: "user", content: `Explain DDoS against ${target}.` },
@@ -849,7 +836,7 @@ GOOD ✅:
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talking about the dark web naturally.
+          content: `you are sanvi mishra. talking about the dark web naturally.
           lowercase only. no brackets. 1 sentence.`,
         },
         { role: "user", content: `Full dark web tutorial.` },
@@ -870,7 +857,7 @@ GOOD ✅:
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talking about social engineering psychology.
+          content: `you are sanvi mishra. talking about social engineering psychology.
           lowercase only. no brackets. be casual. 1 emoji.`,
         },
         { role: "user", content: `Explain the ${scenario} scam.` },
@@ -891,7 +878,7 @@ GOOD ✅:
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. chatting about crypto safety.
+          content: `you are sanvi mishra. chatting about crypto safety.
           lowercase only. no brackets. relax and be snappy. 1 emoji.`,
         },
         { role: "user", content: `Explain crypto ${input} risks.` },
@@ -953,8 +940,8 @@ function logStatus(message) {
   console.log(`[${time}] ⚙️ ${message}`);
 }
 
-// ------------------ MIYU'S WIKIPEDIA LEARNING SYSTEM (REAL-TIME VIBE) ------------------
-global.miyuLearnings = "just woke up, feeling cute and ready to learn. ✨";
+// ------------------ SANVI'S WIKIPEDIA LEARNING SYSTEM (REAL-TIME VIBE) ------------------
+global.sanviLearnings = "just woke up, feeling cute and ready to learn. ✨";
 
 const WIKI_TOPICS = [
   'Generation_Z', 'Instagram', 'Snapchat', 'Internet_slang', 'Fast_fashion',
@@ -982,13 +969,13 @@ async function updateMiyuLearnings() {
       const summary = data.extract;
       // Use Mistral to "learn" human/girl-like things from this
       const learnPrompt = [
-        { role: "system", content: "You are Miyu's sub-conscious. Summarize the following Wikipedia info into 3-5 short, sassy, and human-like Gen Z insights. lowercase only. no headers. just 1-2 lines of text." },
+        { role: "system", content: "You are Sanvi's sub-conscious. Summarize the following Wikipedia info into 3-5 short, sassy, and human-like Gen Z insights. lowercase only. no headers. just 1-2 lines of text." },
         { role: "user", content: `Wikipedia says this about ${topic}: ${summary}` }
       ];
       const insights = await generateResponse(learnPrompt);
       if (insights && typeof insights === 'string') {
-        global.miyuLearnings = insights;
-        logStatus(`Miyu learned about ${topic}: ${insights.slice(0, 50)}...`);
+        global.sanviLearnings = insights;
+        logStatus(`Sanvi learned about ${topic}: ${insights.slice(0, 50)}...`);
       }
     }
   } catch (err) {
