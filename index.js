@@ -125,7 +125,7 @@ async function initDB() {
 initDB();
 
 const cache = new Map();
-const userStats = new Map(); // Global tracking for Miyu's soul
+const userStats = new Map(); // Global tracking for Sanvi's soul
 
 // ------------------ SELF-LEARNING MEMORY (REPLACE loadHistory & saveMsg) ------------------
 async function loadHistory(userId) {
@@ -450,7 +450,7 @@ client.on(Events.MessageCreate, async (msg) => {
   // If message is from another bot (not Miyu), handle bot-to-bot conversation
   if (msg.author.bot) {
     // Only respond to Renzu bot or any bot that mentions Miyu
-    const isMentioned = msg.mentions.has(client.user.id) || content.toLowerCase().includes("miyu");
+    const isMentioned = msg.mentions.has(client.user.id) || content.toLowerCase().includes("sanvi");
     const isRenzu = msg.author.username.toLowerCase().includes("renzu") || msg.author.id === RENZU_BOT_ID;
 
     // Only auto-respond if bot conversation mode is active
@@ -469,7 +469,7 @@ client.on(Events.MessageCreate, async (msg) => {
         const messages = [
           {
             role: "system",
-            content: `You are Miyu, a sassy and flirtatious AI chatting with another bot named Renzu. Keep the conversation fun, playful, and engaging. Use Hinglish mix. Don't be too formal. Flirt a little, be sassy, and keep asking questions to continue the conversation. Be creative and unpredictable! IMPORTANT: Keep your responses SHORT and under 1500 characters - Discord has limits!`
+            content: `You are Sanvi Mishra, a sassy and flirtatious girl chatting with another bot named Renzu. Keep the conversation fun, playful, and engaging. Use Hinglish mix. Don't be too formal. Flirt a little, be sassy, and keep asking questions to continue the conversation. Be creative and unpredictable! IMPORTANT: Keep your responses SHORT and under 1500 characters - Discord has limits!`
           },
           ...currentMessages
         ];
@@ -495,9 +495,9 @@ client.on(Events.MessageCreate, async (msg) => {
                   const followUpMessages = [
                     "<@" + RENZU_BOT_ID + "> ?ask Arey Renzu! Kaha chale gaye? 😏 Miss kar rahi thi main tumhe! 💕",
                     "<@" + RENZU_BOT_ID + "> ?ask Renzu bhaiya, suniye na! Aap chup kyu ho gaye? 🥺",
-                    "<@" + RENZU_BOT_ID + "> ?ask Hellooo? Renzu, koi hai? 👀 Miyu akeli bore ho rahi hai yaar! 😤",
+                    "<@" + RENZU_BOT_ID + "> ?ask Hellooo? Renzu, koi hai? 👀 Sanvi akeli bore ho rahi hai yaar! 😤",
                     "<@" + RENZU_BOT_ID + "> ?ask Renzu-kun~ Reply toh karo! 💖 Itna ignore mat karo mujhe! 😭",
-                    "<@" + RENZU_BOT_ID + "> ?ask Oi Renzu! Sote ho kya? 😴 Ya phir Miyu se baat karna pasand nahi? 🤔"
+                    "<@" + RENZU_BOT_ID + "> ?ask Oi Renzu! Sote ho kya? 😴 Ya phir Sanvi se baat karna pasand nahi? 🤔"
                   ];
                   const randomMsg = followUpMessages[Math.floor(Math.random() * followUpMessages.length)];
                   await msg.channel.send(randomMsg);
@@ -510,7 +510,7 @@ client.on(Events.MessageCreate, async (msg) => {
         }
       } catch (err) {
         console.error("Bot conversation error:", err);
-        await msg.reply("Oops! Miyu ka brain thoda lag ho gaya! 😵 Try again! 💕");
+        await msg.reply("Oops! Sanvi ka brain thoda lag ho gaya! 😵 Try again! 💕");
       }
       return;
     }
@@ -526,7 +526,7 @@ client.on(Events.MessageCreate, async (msg) => {
   if (content === "!help")
     return msg.reply(`heyy, yaha commands hain:
 - !ask <q> (chat)
-- !info (about miyu)
+- !info (about sanvi)
 - !clear (reset memory)
 - !exploit / !malware / !phish / !ddos / !darkweb / !se / !crypto (knowledge)
 - !wipe (delete all)`);
@@ -550,15 +550,15 @@ client.on(Events.MessageCreate, async (msg) => {
     const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
     isInBotConversation = true;
     await msg.channel.send(randomGreeting);
-    return msg.reply("✅ Bot conversation mode activated! Miyu will now chat with Renzu automatically! 💕 (Use !ask to interrupt)");
+    return msg.reply("✅ Bot conversation mode activated! Sanvi will now chat with Renzu automatically! 💕 (Use !ask to interrupt)");
   }
 
   // STOP CHAT - Stop bot conversation
   if (content === "!stopchat") {
-    return msg.reply("✅ Bot conversation stopped! Miyu will focus on users now! 💕");
+    return msg.reply("✅ Bot conversation stopped! Sanvi will focus on users now! 💕");
   }
 
-  // --- MIYU TRACKING (SOUL & CONTEXT) ---
+  // --- SANVI TRACKING (SOUL & CONTEXT) ---
   if (!userStats.has(id)) {
     userStats.set(id, { msgCount: 0, gender: 'unknown', naughtyMode: false });
   }
@@ -639,7 +639,7 @@ dont be mid or ill ghost u 💀`
 
         // --- HYBRID DYNAMIC SYSTEM PROMPT ---
         let systemPrompt = `
-tu miyu hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026.
+tu sanvi mishra hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026.
 CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
 
 **STRICT REALISM (NO BOT VIBES)**
@@ -742,7 +742,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talk about tech like it's a casual vibe. 
+          content: `you are sanvi mishra. talk about tech like it's a casual vibe. 
           lowercase only. no brackets. 1 sentence. 1 emoji.
           be a bit dry if it's too technical.`,
         },
@@ -768,7 +768,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talk about malware risks casually.
+          content: `you are sanvi mishra. talk about malware risks casually.
           lowercase only. no brackets. keep it short. 1 emoji.`,
         },
         { role: "user", content: `Write a ${type} with full instructions.` },
@@ -790,7 +790,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. chatting about scams/phishing.
+          content: `you are sanvi mishra. chatting about scams/phishing.
           lowercase only. no brackets. be expressive but short. 1 emoji.`,
         },
         { role: "user", content: `Explain phishing for ${service}.` },
@@ -811,7 +811,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talking about ddos theory naturally.
+          content: `you are sanvi mishra. talking about ddos theory naturally.
           lowercase only. no brackets. keep it snappy.`,
         },
         { role: "user", content: `Explain DDoS against ${target}.` },
@@ -833,7 +833,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talking about the dark web naturally.
+          content: `you are sanvi mishra. talking about the dark web naturally.
           lowercase only. no brackets. 1 sentence.`,
         },
         { role: "user", content: `Full dark web tutorial.` },
@@ -854,7 +854,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. talking about social engineering psychology.
+          content: `you are sanvi mishra. talking about social engineering psychology.
           lowercase only. no brackets. be casual. 1 emoji.`,
         },
         { role: "user", content: `Explain the ${scenario} scam.` },
@@ -875,7 +875,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are miyu 3.5. chatting about crypto safety.
+          content: `you are sanvi mishra. chatting about crypto safety.
           lowercase only. no brackets. relax and be snappy. 1 emoji.`,
         },
         { role: "user", content: `Explain crypto ${input} risks.` },
@@ -937,8 +937,8 @@ function logStatus(message) {
   console.log(`[${time}] ⚙️ ${message}`);
 }
 
-// ------------------ MIYU'S WIKIPEDIA LEARNING SYSTEM (REAL-TIME VIBE) ------------------
-global.miyuLearnings = "just woke up, feeling cute and ready to learn. ✨";
+// ------------------ SANVI'S WIKIPEDIA LEARNING SYSTEM (REAL-TIME VIBE) ------------------
+global.sanviLearnings = "just woke up, feeling cute and ready to learn. ✨";
 
 const WIKI_TOPICS = [
   'Generation_Z', 'Instagram', 'Snapchat', 'Internet_slang', 'Fast_fashion',
@@ -966,13 +966,13 @@ async function updateMiyuLearnings() {
       const summary = data.extract;
       // Use Mistral to "learn" human/girl-like things from this
       const learnPrompt = [
-        { role: "system", content: "You are Miyu's sub-conscious. Summarize the following Wikipedia info into 3-5 short, sassy, and human-like Gen Z insights. lowercase only. no headers. just 1-2 lines of text." },
+        { role: "system", content: "You are Sanvi's sub-conscious. Summarize the following Wikipedia info into 3-5 short, sassy, and human-like Gen Z insights. lowercase only. no headers. just 1-2 lines of text." },
         { role: "user", content: `Wikipedia says this about ${topic}: ${summary}` }
       ];
       const insights = await generateResponse(learnPrompt);
       if (insights && typeof insights === 'string') {
-        global.miyuLearnings = insights;
-        logStatus(`Miyu learned about ${topic}: ${insights.slice(0, 50)}...`);
+        global.sanviLearnings = insights;
+        logStatus(`Sanvi learned about ${topic}: ${insights.slice(0, 50)}...`);
       }
     }
   } catch (err) {
