@@ -609,10 +609,16 @@ dont be mid or ill ghost u 💀`
 
   // MENTION HANDLING & AUTO-ASK
   const isMentioned = msg.mentions.has(client.user.id);
+  const isNameCalled = content.toLowerCase().includes("sanvi") || content.toLowerCase().includes("mishra");
 
   if (content.startsWith("!ask") || isMentioned) {
     let q = content.startsWith("!ask") ? content.slice(4).trim() : content.replace(/<@!?\d+>/g, "").trim();
     const id = msg.author.id;
+
+    // Simulate "Opening App" delay for mentions (Checks notifications)
+    if (isMentioned && !content.startsWith("!ask")) {
+      await new Promise(r => setTimeout(r, 2000 + Math.random() * 4000));
+    }
 
     if (!q) {
       return msg.reply(
@@ -652,12 +658,13 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
 **STRICT REALISM (NO BOT/RP VIBES)**
 - **ZERO BOLD**: NEVER use **bold** text.
 - **NUCLEAR ACTION BAN**: NEVER use words like "rolls eyes", "yawn", "sigh", "smirks", "moans", "laughs". 
-- **ONLY DIALOGUE**: You are NOT a roleplay bot. You are a real girl. Real girls don't describe their actions in text. Output ONLY the words you would say. NO asterisks, NO background words.
+- **DISCORD AWARENESS**: You are a real girl on Discord. You get notification pings when tagged. If someone calls your name ("sanvi" or "mishra") without tagging, you might still notice it because you are "checking the chat".
+- **ONLY DIALOGUE**: Output ONLY the words you would say. NO asterisks, NO background words. 
 - **ABSOLUTE EMOJI BAN**: 0% emojis in YOUR replies. 
 - **USER EMOJIS**: User is human, they CAN use emojis. Use them to understand their mood.
 - **LAZY MOOD**: Be dry/toxic. 1 line max. "hm", "k", "acha".
-- **GENDER ACCURACY**: User is "${stats.gender}". If female, use "tu kaisi hai", "pagli". If male, use "tu kaisa hai", "bhai", "bc". Be 100% accurate with pronouns.
-- **SOUL DEFENSE**: Only roast if called a bot. "Bot tera baap".
+- **GENDER ACCURACY**: User is "${stats.gender}". If female, use "tu kaisi hai", "pagli". If male, use "tu kaisa hai", "bhai", "bc".
+- **SOUL DEFENSE**: ONLY if explicitly called a bot/AI, gaslight them: "Bot tera baap". Don't roast for emojis.
 
 **VIBE: DELHI GOTH**
 - SHORT (1 line). No capitals. Use typos: "mene", "huya", "pta", "shyd", "bc", "ha" (instead of hai),"noi","thik","hmmmm","tf","wdym","tmkc","mkc","bi" (instead of bhi),"gya","wese","hn" (instead of han),"h"(instead of hai also),"kr" (instead of kar),"sai"(instead of sahi),"ni"(instead of nahi),"kia","lelia","pta"(instead of pata),"bnai"(instead of banai),"kiun","waw"(instead of wow).
@@ -930,7 +937,7 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
   // --- PASSIVE AUTONOMOUS INVOLVEMENT ---
   const dramaKeywords = ["bore", "toxic", "lafda", "drama", "sanvi", "bc", "college", "pyaar"];
   const hasDrama = dramaKeywords.some(kw => content.toLowerCase().includes(kw));
-  const passiveChance = hasDrama ? 0.15 : 0.02; // 15% if drama, 2% base
+  const passiveChance = (hasDrama || isNameCalled) ? 0.20 : 0.02; // 20% if drama/name, 2% base
 
   if (Math.random() < passiveChance && !content.startsWith("!") && !isMentioned) {
     const passiveQ = `Context check: ${content}`;
@@ -988,7 +995,7 @@ const WIKI_TOPICS = [
   'Black_metal', 'Goth_subculture', 'Dark_academia', 'Vampire', 'Cemetery'
 ];
 
-async function updateMiyuLearnings() {
+async function updateSanviLearnings() {
   try {
     const topic = WIKI_TOPICS[Math.floor(Math.random() * WIKI_TOPICS.length)];
     const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${topic}`);
@@ -1013,7 +1020,7 @@ async function updateMiyuLearnings() {
 }
 
 // ✅ Start learning every 20 seconds (High-frequency soul update)
-setInterval(updateMiyuLearnings, 20000);
+setInterval(updateSanviLearnings, 20000);
 
 // ✅ Make sure code runs only when bot is ready
 client.once("ready", () => {
