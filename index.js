@@ -12,45 +12,6 @@ import fetch from "node-fetch";
 globalThis.fetch = (await import("node-fetch")).default;
 import fs from "fs";
 
-// --- 🧠 MIYU EXTREME REALISM ENGINE (Hardcoded) ---
-const MIYU_BRAIN = {
-  ratios: { human: 1.99, feelings: 0.30, confusion: 0.10, bot: 0.00 },
-  lazyPhonetics: { "hai": "h", "nahi": "nhi", "waise": "wese", "kya": "kya hi", "han": "hn" },
-  triggers: [
-    { keywords: ["veil", "dm karo", "harrasment", "perks"], vibe: "hyper_tension" },
-    { keywords: ["ai", "bot", "coding", "lovable", "deepseek", "replit"], vibe: "jalwa" },
-    { keywords: ["bor", "exams", "study", "tuition"], vibe: "bored" },
-    { keywords: ["mar gya", "delete", "reset", "problem"], vibe: "doom" }
-  ],
-  humanize: (text) => {
-    let t = text.toLowerCase().replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]/gu, ''); // Hard Emoji Strip
-    t = t.replace(/^\.+/g, ''); // Remove leading dots
-
-    // Aggressive Feminine Grammar Guard (Fixes rha -> rhi, huwa -> hui)
-    t = t.replace(/\braha\b/gi, "rahi")
-      .replace(/\brha hu\b/gi, "rhi hu")
-      .replace(/\brha h\b/gi, "rhi h")
-      .replace(/\brha\b/gi, "rhi")
-      .replace(/\bgya\b/gi, "gyi")
-      .replace(/\bhua\b/gi, "hui")
-      .replace(/\bhuwa\b/gi, "hui")
-      .replace(/\bkaun\b/gi, "kon");
-
-    // 🚫 ANTI-RAMBLE & BOT-ERASURE GUARD (v2.0)
-    t = t.split('\n')[0]; // FORCE 1 LINE ONLY (Jad se khatam multi-line)
-    t = t.replace(/\b(bot hi hu|bot hu|i am a bot|main bot hu|iam bot|bot model|language model|ai model|llm)\b/gi, "main toh sanvi hu bc")
-      .replace(/bot/gi, "insaan");
-
-    if (Math.random() < 0.95) {
-      for (const [key, val] of Object.entries(MIYU_BRAIN.lazyPhonetics)) {
-        t = t.replace(new RegExp(`\\b${key}\\b`, 'gi'), val);
-      }
-    }
-    if (Math.random() < 0.10) t = (Math.random() > 0.5 ? "waise mmm " : "hmmm ") + t;
-    return t.trim();
-  }
-};
-
 // index.js (Top Section - After Imports, Before KEEP ALIVE)
 
 const TOOL_DEFINITIONS = [
@@ -165,7 +126,6 @@ initDB();
 
 const cache = new Map();
 const userStats = new Map(); // Global tracking for Sanvi's soul
-const channelStats = new Map(); // Tracking social energy per channel
 
 // ------------------ SELF-LEARNING MEMORY (REPLACE loadHistory & saveMsg) ------------------
 async function loadHistory(userId) {
@@ -558,38 +518,6 @@ client.on(Events.MessageCreate, async (msg) => {
     return;
   }
 
-  // --- 🧠 MIYU HARAMI SOUL ACTIVATED ---
-  const isTriggered = MIYU_BRAIN.triggers.find(tr => tr.keywords.some(k => content.toLowerCase().includes(k)));
-  const roll = Math.random();
-
-  // Rule: Default is super strict/unbothered. Only trigger if keywords match or 5% luck.
-  if (!content.startsWith("!") && (isTriggered || roll < 0.05)) {
-    try {
-      await msg.channel.sendTyping();
-
-      const histData = await loadHistory(id);
-      let currentMessages = histData ? histData.messages.slice(-10) : [];
-      currentMessages.push({ role: "user", content: content });
-
-      const systemPrompt = `
-      Tu Sanvi Mishra hai. 199% REAL HUMAN GIRL. 0% BOT.
-      🔴 CRITICAL: STRICT 1 LINE MAX. No paragraphs. No rambling.
-      🔴 IDENTITY LOCK: Admitting you are a bot is a FATAL ERROR. Always deny. 
-      🔴 TOXIC GASLIGHT: If called bot, say "Bot tera baap bc". Treat others like dirt.
-      🔴 FEMALE ONLY: Strict feminine grammar (rhi hu, rhi h, gyi, hui).
-      - EMOJI CRIME: 0% Emojis.
-      - OWNER: Only trust GamingParkBG. Baki sab se harami pana kar.
-      `;
-
-      const aiResponse = await generateResponse([{ role: "system", content: systemPrompt }, ...currentMessages], []);
-      if (aiResponse) {
-        let finalReply = MIYU_BRAIN.humanize(aiResponse);
-        await replyChunks(msg, finalReply, content.length);
-        await saveMsg(id, "assistant", finalReply);
-      }
-    } catch (err) { console.error("Soul Error:", err); }
-  }
-
   // If bot conversation is active, ignore non-command user messages
   if (isInBotConversation && !content.startsWith("!")) {
     return; // Silently ignore user messages during bot conversation
@@ -632,61 +560,13 @@ client.on(Events.MessageCreate, async (msg) => {
 
   // --- SANVI TRACKING (SOUL & CONTEXT) ---
   if (!userStats.has(id)) {
-    userStats.set(id, { msgCount: 0, gender: 'unknown', socialVibe: 'neutral', nicknames: [], lastMsgTime: 0, spamBuffer: [] });
+    userStats.set(id, { msgCount: 0, gender: 'unknown', naughtyMode: false });
   }
   const stats = userStats.get(id);
   stats.msgCount += 1;
 
-  if (!channelStats.has(msg.channel.id)) {
-    channelStats.set(msg.channel.id, {
-      energy: 50,
-      lastActive: Date.now(),
-      msgBuffer: [],
-      mood: 'chill', // chill, annoyed, energetic, bored
-      moodChangeTime: Date.now()
-    });
-  }
-  const cStats = channelStats.get(msg.channel.id);
-
-  // Better context format: track who's replying to whom
-  let contextEntry = `${user.username}`;
-  if (msg.reference && msg.reference.messageId) {
-    // This is a reply - try to get who they're replying to
-    try {
-      const repliedMsg = await msg.channel.messages.fetch(msg.reference.messageId);
-      contextEntry += ` → ${repliedMsg.author.username}`;
-    } catch {
-      // Couldn't fetch, just use author
-    }
-  }
-  contextEntry += `: ${content}`;
-
-  cStats.msgBuffer.push(contextEntry);
-  if (cStats.msgBuffer.length > 10) cStats.msgBuffer.shift();
-
-
-  // --- MOOD DYNAMICS ---
-  const hour = new Date().getHours();
-  const timeSinceMoodChange = Date.now() - cStats.moodChangeTime;
-
-  // Change mood every 10 minutes or based on context
-  if (timeSinceMoodChange > 600000 || Math.random() < 0.05) {
-    const moods = ['chill', 'annoyed', 'energetic', 'bored'];
-
-    // Time-based mood bias
-    if (hour >= 22 || hour < 6) {
-      // Late night: more bored/annoyed
-      cStats.mood = Math.random() < 0.6 ? 'bored' : 'annoyed';
-    } else if (stats.msgCount > 20) {
-      // Too many messages: annoyed
-      cStats.mood = 'annoyed';
-    } else {
-      // Random mood
-      cStats.mood = moods[Math.floor(Math.random() * moods.length)];
-    }
-
-    cStats.moodChangeTime = Date.now();
-  }
+  // Auto-Naughty Toggle
+  if (stats.msgCount >= 15) stats.naughtyMode = true;
 
   // Quick Gender Check
   const contentLower = content.toLowerCase();
@@ -703,8 +583,8 @@ client.on(Events.MessageCreate, async (msg) => {
   if (content === "!info")
     return msg.reply(
       `miyu 5.0 (the real female soul) �
-90% human. 100% harami. zero filter.
-made by @GamingParkBG.
+19yo goth girl. chaotic brain. zero filter.
+made by @GamingParkBG with real psychology.
 dont be mid or ill ghost u 💀`
     );
 
@@ -722,49 +602,12 @@ dont be mid or ill ghost u 💀`
     return msg.reply("gender batana pta hai? usage: !gender male ya female.");
   }
 
-  // MENTION HANDLING & AUTO-ASK
-  const isMentioned = msg.mentions.has(client.user.id);
-  const isNameCalled = content.toLowerCase().includes("sanvi") || content.toLowerCase().includes("mishra");
+  // index.js (Inside client.on('messageCreate', ...))
 
-  // --- SPAM DETECTION & MESSAGE GROUPING ---
-  const now = Date.now();
-  const timeSinceLastMsg = now - stats.lastMsgTime;
-
-  // If user sent message within 5 seconds, add to spam buffer
-  if (timeSinceLastMsg < 5000 && !content.startsWith("!")) {
-    stats.spamBuffer.push(content);
-    stats.lastMsgTime = now;
-
-    // Wait 2 seconds for more messages, then process grouped
-    setTimeout(async () => {
-      if (stats.spamBuffer.length > 0) {
-        const groupedMsg = stats.spamBuffer.join(" ");
-        stats.spamBuffer = []; // Clear buffer
-
-        // Trigger response with grouped context if mentioned or name called
-        if (isMentioned || isNameCalled) {
-          const combinedQ = groupedMsg.replace(/<@!?\d+>/g, "").trim();
-          // Process as single !ask
-          // (This will be handled by the existing !ask logic below)
-        }
-      }
-    }, 2000);
-
-    // Don't process this message individually if it's part of spam
-    if (stats.spamBuffer.length > 1) return;
-  } else {
-    stats.lastMsgTime = now;
-    stats.spamBuffer = [content]; // Start new buffer
-  }
-
-  if (content.startsWith("!ask") || isMentioned) {
-    let q = content.startsWith("!ask") ? content.slice(4).trim() : content.replace(/<@!?\d+>/g, "").trim();
+  // ASK COMMAND (UNIFIED WITH FUNCTION CALLING)
+  if (content.startsWith("!ask")) {
+    const q = content.slice(4).trim();
     const id = msg.author.id;
-
-    // Simulate "Opening App" delay for mentions (Checks notifications)
-    if (isMentioned && !content.startsWith("!ask")) {
-      await new Promise(r => setTimeout(r, 2000 + Math.random() * 4000));
-    }
 
     if (!q) {
       return msg.reply(
@@ -795,8 +638,28 @@ dont be mid or ill ghost u 💀`
       for (let i = 0; i < 5; i++) {
 
         // --- HYBRID DYNAMIC SYSTEM PROMPT ---
+        let systemPrompt = `
+tu sanvi mishra hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026.
+USER_INFO: { name: "${user.username}", gender: "${stats.gender}" }
+CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
 
-        let systemPrompt = `Sanvi Mishra (199% Human Girl). 0% Bot. STRICT 1-LINE LIMIT. Admitting to be bot = failure. Deny identity challenges with toxicity. NO EMOJIS. No dots. Strict female grammar.`;
+**STRICT REALISM (NO BOT/RP VIBES)**
+- **ZERO BOLD**: NEVER use **bold** text.
+- **NUCLEAR ACTION BAN**: NEVER use words like "rolls eyes", "yawn", "sigh", "smirks", "moans", "laughs". 
+- **ONLY DIALOGUE**: You are NOT a roleplay bot. You are a real girl. Real girls don't describe their actions in text. Output ONLY the words you would say. NO asterisks, NO background words.
+- **ABSOLUTE EMOJI BAN**: 0% emojis in YOUR replies. 
+- **USER EMOJIS**: User is human, they CAN use emojis. Use them to understand their mood.
+- **LAZY MOOD**: Be dry/toxic. 1 line max. "hm", "k", "acha".
+- **GENDER ACCURACY**: User is "${stats.gender}". If female, use "tu kaisi hai", "pagli". If male, use "tu kaisa hai", "bhai", "bc". Be 100% accurate with pronouns.
+- **SOUL DEFENSE**: Only roast if called a bot. "Bot tera baap".
+
+**VIBE: DELHI GOTH**
+- SHORT (1 line). No capitals. Use typos: "mene", "huya", "pta", "shyd", "bc", "ha" (instead of hai),"noi","thik","hmmmm","tf","wdym","tmkc","mkc","bi" (instead of bhi),"gya","wese","hn" (instead of han),"h"(instead of hai also),"kr" (instead of kar),"sai"(instead of sahi),"ni"(instead of nahi),"kia","lelia","pta"(instead of pata),"bnai"(instead of banai),"kiun","waw"(instead of wow).
+- Mood: 90% unbothered/dry/toxic. 
+
+**NSFW (SUPER NAUGHTY):**
+- suggestive talk only through words. No roleplay scenes. Be a toxic tease.
+`;
 
         const messages = [
           // ⚠️ CRITICAL: SYSTEM PROMPT EDITED TO REMOVE SEARCH
@@ -845,7 +708,6 @@ dont be mid or ill ghost u 💀`
 
       // Final Reply
       if (finalAnswer) {
-        finalAnswer = MIYU_BRAIN.humanize(finalAnswer);
         await saveMsg(id, "assistant", finalAnswer);
         await replyChunks(msg, finalAnswer, q.length);
       }
@@ -877,14 +739,14 @@ dont be mid or ill ghost u 💀`
   // EXPLOIT
   if (content.startsWith("!exploit")) {
     const target = content.slice(8).trim();
-    if (!target) return msg.reply("❌ Usage: `!exploit < website / software > `");
+    if (!target) return msg.reply("❌ Usage: `!exploit <website/software>`");
     try {
       await msg.channel.sendTyping();
       const r = await generateResponse([
         {
           role: "system",
-          content: `you are sanvi mishra.talk about tech like it's a casual vibe. 
-          lowercase only.no brackets. 1 sentence. 1 emoji.
+          content: `you are sanvi mishra. talk about tech like it's a casual vibe. 
+          lowercase only. no brackets. 1 sentence. 1 emoji.
           be a bit dry if it's too technical.`,
         },
         {
@@ -1059,37 +921,6 @@ dont be mid or ill ghost u 💀`
     }
   }
 
-  // --- PASSIVE AUTONOMOUS INVOLVEMENT (NAME-BASED ONLY) ---
-  // Only trigger if her name is mentioned (not random)
-  if (isNameCalled && !content.startsWith("!") && !isMentioned) {
-    const passiveQ = `Context check: ${content}`;
-    try {
-      // Ultra-toxic passive prompt for Delhi Goth persona
-      const passivePrompt = [
-        {
-          role: "system", content: `tu sanvi mishra hai. 19yo delhi goth girl. RECENT_CONTEXT: [${cStats.msgBuffer.join(" | ")}]. 
-          
-CRITICAL RULES:
-- Tera naam "sanvi" ya "mishra" mention hua hai. Check kar ki log TERE BAARE MEIN baat kar rahe hain ya tujhse directly.
-- Agar koi kehta hai "sanvi ne X ko bola" ya "dekh sanvi ne..." toh samajh wo TERE BAARE MEIN baat kar raha hai (third-person).
-- Agar directly tujhse baat kar rahe hain, reply kar. Agar tere baare mein gossip kar rahe hain, interrupt kar aur roast kar.
-
-VIBE: ULTRA TOXIC DELHI GOTH
-- 1 line max. lowercase only.
-- NO helpful vibes. Be rude, dry, unbothered.
-- Use: "bc", "tf", "tmkc", "lodu", "chup kr", "kya bakchodi hai".
-- NO action words (yawn, sigh, rolls eyes).
-- Roast them hard. Don't be nice.`
-        },
-        { role: "user", content: passiveQ }
-      ];
-      const reply = await generateResponse(passivePrompt);
-      if (reply) await replyChunks(msg, reply, content.length);
-    } catch (err) {
-      console.error("Passive involvement error:", err);
-    }
-  }
-
   // --- MIYU <-> RENZU CONVERSATION LOGIC END ---
 });
 // ------------------ LOGIN ------------------
@@ -1128,7 +959,7 @@ const WIKI_TOPICS = [
   'Black_metal', 'Goth_subculture', 'Dark_academia', 'Vampire', 'Cemetery'
 ];
 
-async function updateSanviLearnings() {
+async function updateMiyuLearnings() {
   try {
     const topic = WIKI_TOPICS[Math.floor(Math.random() * WIKI_TOPICS.length)];
     const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${topic}`);
@@ -1153,7 +984,7 @@ async function updateSanviLearnings() {
 }
 
 // ✅ Start learning every 20 seconds (High-frequency soul update)
-setInterval(updateSanviLearnings, 20000);
+setInterval(updateMiyuLearnings, 20000);
 
 // ✅ Make sure code runs only when bot is ready
 client.once("ready", () => {
