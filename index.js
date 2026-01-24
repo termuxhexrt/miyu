@@ -567,11 +567,41 @@ client.on(Events.MessageCreate, async (msg) => {
   stats.msgCount += 1;
 
   if (!channelStats.has(msg.channel.id)) {
-    channelStats.set(msg.channel.id, { energy: 50, lastActive: Date.now(), msgBuffer: [] });
+    channelStats.set(msg.channel.id, {
+      energy: 50,
+      lastActive: Date.now(),
+      msgBuffer: [],
+      mood: 'chill', // chill, annoyed, energetic, bored
+      moodChangeTime: Date.now()
+    });
   }
   const cStats = channelStats.get(msg.channel.id);
   cStats.msgBuffer.push(`${user.username}: ${content}`);
   if (cStats.msgBuffer.length > 10) cStats.msgBuffer.shift();
+
+
+  // --- MOOD DYNAMICS ---
+  const hour = new Date().getHours();
+  const timeSinceMoodChange = Date.now() - cStats.moodChangeTime;
+
+  // Change mood every 10 minutes or based on context
+  if (timeSinceMoodChange > 600000 || Math.random() < 0.05) {
+    const moods = ['chill', 'annoyed', 'energetic', 'bored'];
+
+    // Time-based mood bias
+    if (hour >= 22 || hour < 6) {
+      // Late night: more bored/annoyed
+      cStats.mood = Math.random() < 0.6 ? 'bored' : 'annoyed';
+    } else if (stats.msgCount > 20) {
+      // Too many messages: annoyed
+      cStats.mood = 'annoyed';
+    } else {
+      // Random mood
+      cStats.mood = moods[Math.floor(Math.random() * moods.length)];
+    }
+
+    cStats.moodChangeTime = Date.now();
+  }
 
   // Quick Gender Check
   const contentLower = content.toLowerCase();
@@ -692,8 +722,24 @@ Reply SIRF **${user.username}** ko dena hai.
 ${user.username} ke alawa kisi ka naam mat use kar.
 
 USER_INFO: { name: "${user.username}", gender: "${stats.gender}" }
+CURRENT_MOOD: "${cStats.mood}" (affects your vibe and typos)
 RECENT_CONTEXT (background chat, NOT the current user): [${cleanContext}]
 CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+
+**🎭 MOOD-BASED BEHAVIOR**
+${cStats.mood === 'chill' ? `- Be slightly more friendly (but still dry)
+- Normal typos (5% chance)
+- Use: "acha", "k", "hmm"` : ''}
+${cStats.mood === 'annoyed' ? `- Be extra rude and short
+- More typos (15% chance): "pta" → "pt", "kya" → "kya yaar"  
+- Use: "bc", "tmkc", "chup kr", "ek second"
+- Letter repetition when irritated: "haaaan", "kyaaaa"` : ''}
+${cStats.mood === 'energetic' ? `- Be slightly more talkative (2-3 lines max)
+- Fewer typos (2% chance)
+- Use: "lol", "bro", "dekh na"` : ''}
+${cStats.mood === 'bored' ? `- Ultra dry, 1-word replies if possible
+- Lazy typos (10% chance): "h" instead of "hai", "ni" instead of "nahi"
+- Use: "hm", "k", "whatev", "shyd"` : ''}
 
 **STRICT REALISM (NO BOT/RP VIBES)**
 - **ZERO BOLD**: NEVER use **bold** text.
