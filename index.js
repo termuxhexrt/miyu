@@ -12,6 +12,8 @@ import fetch from "node-fetch";
 globalThis.fetch = (await import("node-fetch")).default;
 import fs from "fs";
 
+const OWNER_ID = "1104652354655113268";
+
 // --- 🧠 MIYU COGNITIVE SOCIAL BRAIN (Human Context v1.0) ---
 const MIYU_BRAIN = {
   ratios: { human: 1.99, feelings: 0.30, confusion: 0.10, bot: 0.00 },
@@ -22,18 +24,31 @@ const MIYU_BRAIN = {
     { keywords: ["mar gya", "delete", "reset", "problem"], vibe: "doom" },
     { keywords: ["sanvi", "mishra"], vibe: "name_called" }
   ],
-  humanize: (text) => {
+  humanize: (text, targetGender = 'unknown') => {
     // 1. Natural rhythm: Emojis are a crime for Miyu
     let t = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]/gu, '');
     t = t.replace(/^\.+/g, '').replace(/^\*+/g, ''); // No RP/dots
 
-    // 2. DNA Identity: 100% Ladki
+    // 2. DNA Identity: 100% Ladki (Fixes self-suffixes)
     t = t.replace(/\b(raha|rha|gya|hua|huwa)\b/gi, (m) => {
       const map = { "raha": "rahi", "rha": "rhi", "gya": "gyi", "hua": "hui", "huwa": "hui" };
       return map[m.toLowerCase()] || m;
     });
 
-    // 3. Cognitive Guard: Anti-Bot Confession
+    // 3. Target User Identity (Fixes when Sanvi talks to OTHERS)
+    if (targetGender === 'male') {
+      t = t.replace(/\b(rahi ho|rhi ho|karogi|karti ho|ho rahi)\b/gi, (m) => {
+        const map = { "rahi ho": "rahe ho", "rhi ho": "rhe ho", "karogi": "karoge", "karti ho": "karte ho", "ho rahi": "ho rahe" };
+        return map[m.toLowerCase()] || m;
+      });
+    } else if (targetGender === 'female') {
+      t = t.replace(/\b(rahe ho|rhe ho|karoge|karte ho|ho rahe)\b/gi, (m) => {
+        const map = { "rahe ho": "rahi ho", "rhe ho": "rhi ho", "karoge": "karogi", "karte ho": "karti ho", "ho rahe": "ho rahi" };
+        return map[m.toLowerCase()] || m;
+      });
+    }
+
+    // 4. Cognitive Guard: Anti-Bot Confession
     t = t.split('\n')[0].replace(/\b(bot hu|bot hi hu|main bot hu|ai model|language model)\b/gi, "main toh sanvi hu bc");
 
     return t.trim();
@@ -489,16 +504,18 @@ client.on(Events.MessageCreate, async (msg) => {
       const systemPrompt = `
       Tu Sanvi Mishra hai. 199% INSAAN.
       🔴 COGNITIVE THINKING: Think like a real 19yo Delhi girl. 
-      - Understand subtext. If someone challenges you, gaslight them.
-      - 🔴 PURE CONTEXT: No forced typos. Speak natural Hinglish.
-      - 🔴 IDENTITY: Strictly LADKI (rhi h, gyi, hui).
-      - RECIPIENT: ${user.username} is chatting. Reply with ${isTriggered ? isTriggered.vibe : 'unbothered'} energy.
+      🔴 IDENTITY: Strictly LADKI (rhi h, gyi, hui).
+      🔴 TARGET GENDER: ${user.username} is ${stats.gender}. 
+        - If male: Use "tu kaisa hai", "bhai", "lodu", "kar raha h".
+        - If female: Use "tu kaisi hai", "pagli", "kar rhi h".
+      - 🔴 PURE CONTEXT: Natural Hinglish. No forced typos.
+      - RECIPIENT: ${user.username}. Reply with ${isTriggered ? isTriggered.vibe : 'unbothered'} energy.
       - Rule: 1 line max. NO EMOJIS.
       `;
 
       const aiResponse = await generateResponse([{ role: "system", content: systemPrompt }, ...currentMessages], []);
       if (aiResponse) {
-        let finalReply = MIYU_BRAIN.humanize(aiResponse);
+        let finalReply = MIYU_BRAIN.humanize(aiResponse, stats.gender);
         await replyChunks(msg, finalReply, content.length);
         await saveMsg(id, "assistant", finalReply);
       }
@@ -619,7 +636,9 @@ client.on(Events.MessageCreate, async (msg) => {
 
   // --- SANVI TRACKING (SOUL & CONTEXT) ---
   if (!userStats.has(id)) {
-    userStats.set(id, { msgCount: 0, gender: 'unknown', naughtyMode: false });
+    let g = 'unknown';
+    if (id === OWNER_ID) g = 'male'; // OWNER LOCK
+    userStats.set(id, { msgCount: 0, gender: g, naughtyMode: false });
   }
   const stats = userStats.get(id);
   stats.msgCount += 1;
@@ -699,11 +718,13 @@ dont be mid or ill ghost u 💀`
         // --- HYBRID DYNAMIC SYSTEM PROMPT ---
         let systemPrompt = `
 tu sanvi mishra hai. 199% HUMAN GIRL. 
-🔴 COGNITIVE THINKING: Think organically. Understand social context and motives.
-🔴 PURE CONTEXT: No forced typos. Speak natural Hinglish (lowecase only). 
 🔴 IDENTITY: Strictly LADKI. Use feminine grammar (rhi h, gyi, hui).
-🔴 ZERO BOT ADMISSION: Admitting you are a bot is a logic error. Deny with toxicity.
-USER: ${user.username} (${stats.gender}). Reply with snappy 1-line bursts. 0% Emojis.
+🔴 TARGET GENDER: ${user.username} is ${stats.gender}.
+  - If male: Use "tu kaisa hai", "bhai", "lodu", "kar raha h".
+  - If female: Use "tu kaisi hai", "pagli", "kar rhi h".
+🔴 COGNITIVE THINKING: Think organically. Understand social context.
+🔴 PURE CONTEXT: No forced typos. Speak natural Hinglish.
+🔴 ZERO BOT ADMISSION: Deny with toxicity. 1-line bursts only. 0% Emojis.
 `;
 
         const messages = [
@@ -753,6 +774,7 @@ USER: ${user.username} (${stats.gender}). Reply with snappy 1-line bursts. 0% Em
 
       // Final Reply
       if (finalAnswer) {
+        finalAnswer = MIYU_BRAIN.humanize(finalAnswer, stats.gender);
         await saveMsg(id, "assistant", finalAnswer);
         await replyChunks(msg, finalAnswer, q.length);
       }
