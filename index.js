@@ -561,7 +561,7 @@ client.on(Events.MessageCreate, async (msg) => {
 
   // --- SANVI TRACKING (SOUL & CONTEXT) ---
   if (!userStats.has(id)) {
-    userStats.set(id, { msgCount: 0, gender: 'unknown', socialVibe: 'neutral', nicknames: [] });
+    userStats.set(id, { msgCount: 0, gender: 'unknown', socialVibe: 'neutral', nicknames: [], lastMsgTime: 0, spamBuffer: [] });
   }
   const stats = userStats.get(id);
   stats.msgCount += 1;
@@ -611,6 +611,37 @@ dont be mid or ill ghost u 💀`
   const isMentioned = msg.mentions.has(client.user.id);
   const isNameCalled = content.toLowerCase().includes("sanvi") || content.toLowerCase().includes("mishra");
 
+  // --- SPAM DETECTION & MESSAGE GROUPING ---
+  const now = Date.now();
+  const timeSinceLastMsg = now - stats.lastMsgTime;
+
+  // If user sent message within 5 seconds, add to spam buffer
+  if (timeSinceLastMsg < 5000 && !content.startsWith("!")) {
+    stats.spamBuffer.push(content);
+    stats.lastMsgTime = now;
+
+    // Wait 2 seconds for more messages, then process grouped
+    setTimeout(async () => {
+      if (stats.spamBuffer.length > 0) {
+        const groupedMsg = stats.spamBuffer.join(" ");
+        stats.spamBuffer = []; // Clear buffer
+
+        // Trigger response with grouped context if mentioned or name called
+        if (isMentioned || isNameCalled) {
+          const combinedQ = groupedMsg.replace(/<@!?\d+>/g, "").trim();
+          // Process as single !ask
+          // (This will be handled by the existing !ask logic below)
+        }
+      }
+    }, 2000);
+
+    // Don't process this message individually if it's part of spam
+    if (stats.spamBuffer.length > 1) return;
+  } else {
+    stats.lastMsgTime = now;
+    stats.spamBuffer = [content]; // Start new buffer
+  }
+
   if (content.startsWith("!ask") || isMentioned) {
     let q = content.startsWith("!ask") ? content.slice(4).trim() : content.replace(/<@!?\d+>/g, "").trim();
     const id = msg.author.id;
@@ -651,8 +682,10 @@ dont be mid or ill ghost u 💀`
         // --- HYBRID DYNAMIC SYSTEM PROMPT ---
         let systemPrompt = `
 tu sanvi mishra hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026.
+
+CRITICAL: Tu abhi **${user.username}** se baat kar rahi hai. Reply **${user.username}** ko dena hai.
 USER_INFO: { name: "${user.username}", gender: "${stats.gender}" }
-RECENT_CONTEXT: [${cStats.msgBuffer.join(" | ")}]
+RECENT_CONTEXT (sirf reference ke liye, ye purani baatein hain): [${cStats.msgBuffer.join(" | ")}]
 CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
 
 **STRICT REALISM (NO BOT/RP VIBES)**
