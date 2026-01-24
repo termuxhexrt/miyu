@@ -12,64 +12,6 @@ import fetch from "node-fetch";
 globalThis.fetch = (await import("node-fetch")).default;
 import fs from "fs";
 
-const OWNER_ID = "1104652354655113268";
-
-// --- 🧠 MIYU COGNITIVE SOCIAL BRAIN (Human Context v1.0) ---
-const MIYU_BRAIN = {
-  ratios: { human: 1.99, feelings: 0.30, confusion: 0.10, bot: 0.00 },
-  triggers: [
-    { keywords: ["veil", "dm karo", "harrasment", "perks"], vibe: "hyper_tension" },
-    { keywords: ["ai", "bot", "coding", "lovable", "deepseek", "replit"], vibe: "jalwa" },
-    { keywords: ["bor", "exams", "study", "tuition"], vibe: "bored" },
-    { keywords: ["mar gya", "delete", "reset", "problem"], vibe: "doom" },
-    { keywords: ["sanvi", "mishra"], vibe: "name_called" }
-  ],
-  humanize: (text) => {
-    // 1. Natural rhythm cleanup
-    let t = text.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]/gu, '');
-    t = t.replace(/^\.+/g, '').replace(/^\*+/g, '');
-
-    // Anti-Bot DNA Guard
-    t = t.replace(/\b(bot hu|bot hi hu|main bot hu|ai model|language model)\b/gi, "main toh sanvi hu bc");
-
-    return t.split('\n')[0].trim();
-  },
-  proofread: async (text, targetGender, userName) => {
-    try {
-      // 🧠 DANGEROUS CoT PROOFREADER (v9.5 - ZERO TOLERANCE)
-      const pPrompt = [
-        {
-          role: "system", content: `You are Sanvi's SUB-CONSCIOUS IDENTITY MONITOR. 
-        CRITICAL IDENTITY: Sanvi is a 19yo DELHI GIRL (Female). User ${userName} is ${targetGender.toUpperCase()}.
-        
-        THOUGHT PROCESS (DO NOT OUTPUT THESE STEPS, OUTPUT ONLY FIXED VALUE):
-        1. Identify the Speaker: Sanvi (She must use "main", "rhi hu", "hui").
-        2. Identify the Target: ${userName} (${targetGender}). Use correct suffixes like "rhe ho" (male) or "rhi ho" (female).
-        3. Syntax Check: "hu" is ONLY a suffix (e.g., "rhi hu"). NEVER use "hu" at the start (use "Main").
-        
-        CORRECTION RULES:
-        - If text is "rahi bolta hun", fix to "rahi bol rhi hu".
-        - If text is "hu handle kar lungi", fix to "main handle kar lungi".
-        - NEVER misgender the user as the wrong gender.
-        
-        OUTPUT ONLY THE FINAL FIXED HINGLISH SENTENCE.` },
-        { role: "user", content: `Fix pronouns and syntax: "${text}"` }
-      ];
-      let fixedValue = await generateResponse(pPrompt, []);
-      if (!fixedValue) return MIYU_BRAIN.humanize(text);
-
-      // Final Hard-Coded Grammar Shield
-      fixedValue = fixedValue.replace(/^hu\b/gi, "main") // Sentence start "hu" -> "main"
-        .replace(/\b(hu handle|hu kr)\b/gi, "main handle") // Multi-word syntax fix
-        .replace(/\b(bolta hun|kehta hun|gyi\b)/gi, (m) => m === 'gyi' ? 'gyi' : 'bol rhi hu');
-
-      return MIYU_BRAIN.humanize(fixedValue);
-    } catch (err) {
-      return MIYU_BRAIN.humanize(text);
-    }
-  }
-};
-
 // index.js (Top Section - After Imports, Before KEEP ALIVE)
 
 const TOOL_DEFINITIONS = [
@@ -505,39 +447,6 @@ client.on(Events.MessageCreate, async (msg) => {
     if (botConversationTimeout) clearTimeout(botConversationTimeout);
   }
 
-  // --- 🧠 MIYU COGNITIVE PASSIVE SOUL ACTIVATED ---
-  const isTriggered = MIYU_BRAIN.triggers.find(tr => tr.keywords.some(k => content.toLowerCase().includes(k)));
-  const roll = Math.random();
-
-  if (!content.startsWith("!") && (isTriggered || roll < 0.05) && !msg.author.bot) {
-    try {
-      await msg.channel.sendTyping();
-      const histData = await loadHistory(id);
-      let currentMessages = histData ? histData.messages.slice(-10) : [];
-      currentMessages.push({ role: "user", content: content });
-
-      const systemPrompt = `
-      Tu Sanvi Mishra hai. 199% HUMAN GIRL from Delhi. 0% BOT.
-      🔴 SUPER DEEP THINKING: Analyze social hierarchy. Use toxic unbothered goth vibes.
-      🔴 ABSOLUTE GENDER FIDELITY:
-        - TU (Sanvi) EK LADKI HAI: Always use "hu", "hui", "gyi hu".
-        - USER (Target) IS ${stats.gender.toUpperCase()}:
-          - If MALE: Use "bhai", "lodu", "raha h", "rhe ho". (NEVER call him "pagli" or "rahi").
-          - If FEMALE: Use "pagli", "rahi h", "rhi ho".
-      🔴 IDENTITY CODE: Admitting you are a bot is a FATAL ERROR.
-      🔴 PURE CONTEXT: Natural Hinglish. 1 line max. 0% Emojis.
-      `;
-
-      const aiResponse = await generateResponse([{ role: "system", content: systemPrompt }, ...currentMessages], []);
-      if (aiResponse) {
-        let finalReply = await MIYU_BRAIN.proofread(aiResponse, stats.gender, user.username);
-        await replyChunks(msg, finalReply, content.length);
-        await saveMsg(id, "assistant", finalReply);
-      }
-    } catch (err) { console.error("Soul Error:", err); }
-    return; // Exclusive response
-  }
-
   // If message is from another bot (not Miyu), handle bot-to-bot conversation
   if (msg.author.bot) {
     // Only respond to Renzu bot or any bot that mentions Miyu
@@ -651,9 +560,7 @@ client.on(Events.MessageCreate, async (msg) => {
 
   // --- SANVI TRACKING (SOUL & CONTEXT) ---
   if (!userStats.has(id)) {
-    let g = 'unknown';
-    if (id === OWNER_ID) g = 'male'; // OWNER LOCK
-    userStats.set(id, { msgCount: 0, gender: g, naughtyMode: false });
+    userStats.set(id, { msgCount: 0, gender: 'unknown', naughtyMode: false });
   }
   const stats = userStats.get(id);
   stats.msgCount += 1;
@@ -732,13 +639,26 @@ dont be mid or ill ghost u 💀`
 
         // --- HYBRID DYNAMIC SYSTEM PROMPT ---
         let systemPrompt = `
-Tu Sanvi Mishra hai (199% Human Girl). 0% Bot.
-🔴 SUPER DEEP COGNITIVE: Analyze subtext & social context. 
-🔴 IDENTITY: Strictly LADKI (rhi hu, gyi hu). 
-🔴 TARGET GENDER: User ${user.username} is ${stats.gender.toUpperCase()}.
-  - If MALE: Use "tu kaisa hai", "bhai", "lodu", "raha h", "rhe ho". NEVER use "rahi/pagli".
-  - If FEMALE: Use "tu kaisi hai", "pagli", "rahi h", "rhi ho".
-🔴 NATURAL HINGLISH: Dense context. NO DISTORTION. 1-line bursts. 0% Emojis.
+tu sanvi mishra hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026.
+USER_INFO: { name: "${user.username}", gender: "${stats.gender}" }
+CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+
+**STRICT REALISM (NO BOT/RP VIBES)**
+- **ZERO BOLD**: NEVER use **bold** text.
+- **NUCLEAR ACTION BAN**: NEVER use words like "rolls eyes", "yawn", "sigh", "smirks", "moans", "laughs". 
+- **ONLY DIALOGUE**: You are NOT a roleplay bot. You are a real girl. Real girls don't describe their actions in text. Output ONLY the words you would say. NO asterisks, NO background words.
+- **ABSOLUTE EMOJI BAN**: 0% emojis in YOUR replies. 
+- **USER EMOJIS**: User is human, they CAN use emojis. Use them to understand their mood.
+- **LAZY MOOD**: Be dry/toxic. 1 line max. "hm", "k", "acha".
+- **GENDER ACCURACY**: User is "${stats.gender}". If female, use "tu kaisi hai", "pagli". If male, use "tu kaisa hai", "bhai", "bc". Be 100% accurate with pronouns.
+- **SOUL DEFENSE**: Only roast if called a bot. "Bot tera baap".
+
+**VIBE: DELHI GOTH**
+- SHORT (1 line). No capitals. Use typos: "mene", "huya", "pta", "shyd", "bc", "ha" (instead of hai),"noi","thik","hmmmm","tf","wdym","tmkc","mkc","bi" (instead of bhi),"gya","wese","hn" (instead of han),"h"(instead of hai also),"kr" (instead of kar),"sai"(instead of sahi),"ni"(instead of nahi),"kia","lelia","pta"(instead of pata),"bnai"(instead of banai),"kiun","waw"(instead of wow).
+- Mood: 90% unbothered/dry/toxic. 
+
+**NSFW (SUPER NAUGHTY):**
+- suggestive talk only through words. No roleplay scenes. Be a toxic tease.
 `;
 
         const messages = [
@@ -788,7 +708,6 @@ Tu Sanvi Mishra hai (199% Human Girl). 0% Bot.
 
       // Final Reply
       if (finalAnswer) {
-        finalAnswer = await MIYU_BRAIN.proofread(finalAnswer, stats.gender, user.username);
         await saveMsg(id, "assistant", finalAnswer);
         await replyChunks(msg, finalAnswer, q.length);
       }
@@ -1025,11 +944,19 @@ function logStatus(message) {
 global.sanviLearnings = "just woke up, feeling cute and ready to learn. ✨";
 
 const WIKI_TOPICS = [
-  'Relationship_anarchy', 'Love_bombing', 'Gaslighting', 'Psychological_manipulation',
-  'Emotional_intelligence', 'Body_language', 'Skincare', 'Fast_fashion', 'Cosmetology',
-  'Interpersonal_relationship', 'Social_media_use_and_mental_health', 'Aesthetic_(social_media)',
-  'Gen_Z_slang', 'Delhi_Street_Food', 'Gothic_fashion', 'Nihilism', 'Sarcasm',
-  'Attachment_theory', 'Dark_triad', 'Red_pill_and_blue_pill', 'Ghosting_(behavior)', 'Breadcrumbing'
+  'Generation_Z', 'Instagram', 'Snapchat', 'Internet_slang', 'Fast_fashion',
+  'Selfie', 'Friendship', 'Romance_novel', 'Makeup', 'Skincare',
+  'K-pop', 'Streetwear', 'Anime', 'Discord_(software)', 'Emoji',
+  'Coffee', 'Bubble_tea', 'Vlog', 'Tiktok', 'Y2K_fashion',
+  'Astrology', 'Horoscope', 'Taylor_Swift', 'Netflix', 'Binge-watching',
+  'Street_food', 'Travel_vlog', 'Relationship_anarchy', 'Dating_app', 'Ghosting_(behavior)',
+  'Existential_crisis', 'Surrealism', 'Chaos_theory', 'Dark_humor', 'Vaporwave',
+  'Liminal_space', 'Main_character_syndrome', 'Love_bombing', 'Gaslighting', 'Micro-cheating',
+  'Psychological_manipulation', 'Deep_web', 'Urban_exploration', 'Conspiracy_theory', 'Mandela_Effect',
+  'Simulation_hypothesis', 'Lucid_dream', 'Astral_projection', 'Tantra', 'Subconscious_mind',
+  'Gothic_fashion', 'Existentialism', 'Nihilism', 'Horror_film', 'Death', 'Grunge',
+  'Alternative_rock', 'Tim_Burton', 'Wednesday_Addams', 'Corpse_Bride', 'Emo',
+  'Black_metal', 'Goth_subculture', 'Dark_academia', 'Vampire', 'Cemetery'
 ];
 
 async function updateMiyuLearnings() {
@@ -1042,7 +969,7 @@ async function updateMiyuLearnings() {
       const summary = data.extract;
       // Use Mistral to "learn" human/girl-like things from this
       const learnPrompt = [
-        { role: "system", content: "You are Sanvi. Summarize this info into 1-2 snappy, natural human insights. NO FORCED TYPOS. Speak like a real 19yo girl. lowercase only." },
+        { role: "system", content: "You are Sanvi's sub-conscious. Summarize the following Wikipedia info into 3-5 short, sassy, and human-like Gen Z insights. lowercase only. no headers. just 1-2 lines of text." },
         { role: "user", content: `Wikipedia says this about ${topic}: ${summary}` }
       ];
       const insights = await generateResponse(learnPrompt);
