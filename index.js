@@ -37,14 +37,20 @@ const MIYU_BRAIN = {
 
     // 3. Target User Identity (Fixes when Sanvi talks to OTHERS)
     if (targetGender === 'male') {
-      t = t.replace(/\b(rahi ho|rhi ho|karogi|karti ho|ho rahi)\b/gi, (m) => {
-        const map = { "rahi ho": "rahe ho", "rhi ho": "rhe ho", "karogi": "karoge", "karti ho": "karte ho", "ho rahi": "ho rahe" };
-        return map[m.toLowerCase()] || m;
+      t = t.replace(/\b(rahi ho|rhi ho|karogi|karti ho|ho rahi|kaisi hai|pagli)\b/gi, (m) => {
+        const d = {
+          "rahi ho": "rahe ho", "rhi ho": "rhe ho", "karogi": "karoge",
+          "karti ho": "karte ho", "ho rahi": "ho rahe", "kaisi hai": "kaisa hai", "pagli": "lodu"
+        };
+        return d[m.toLowerCase()] || m;
       });
     } else if (targetGender === 'female') {
-      t = t.replace(/\b(rahe ho|rhe ho|karoge|karte ho|ho rahe)\b/gi, (m) => {
-        const map = { "rahe ho": "rahi ho", "rhe ho": "rhi ho", "karoge": "karogi", "karte ho": "karti ho", "ho rahe": "ho rahi" };
-        return map[m.toLowerCase()] || m;
+      t = t.replace(/\b(rahe ho|rhe ho|karoge|karte ho|ho rahe|kaisa hai|lodu|bhai)\b/gi, (m) => {
+        const d = {
+          "rahe ho": "rahi ho", "rhe ho": "rhi ho", "karoge": "karogi",
+          "karte ho": "karti ho", "ho rahe": "ho rahi", "kaisa hai": "kaisi hai", "lodu": "pagli", "bhai": "pagli"
+        };
+        return d[m.toLowerCase()] || m;
       });
     }
 
