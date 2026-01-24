@@ -126,6 +126,7 @@ initDB();
 
 const cache = new Map();
 const userStats = new Map(); // Global tracking for Sanvi's soul
+const channelStats = new Map(); // Tracking social energy per channel
 
 // ------------------ SELF-LEARNING MEMORY (REPLACE loadHistory & saveMsg) ------------------
 async function loadHistory(userId) {
@@ -560,13 +561,17 @@ client.on(Events.MessageCreate, async (msg) => {
 
   // --- SANVI TRACKING (SOUL & CONTEXT) ---
   if (!userStats.has(id)) {
-    userStats.set(id, { msgCount: 0, gender: 'unknown', naughtyMode: false });
+    userStats.set(id, { msgCount: 0, gender: 'unknown', socialVibe: 'neutral', nicknames: [] });
   }
   const stats = userStats.get(id);
   stats.msgCount += 1;
 
-  // Auto-Naughty Toggle
-  if (stats.msgCount >= 15) stats.naughtyMode = true;
+  if (!channelStats.has(msg.channel.id)) {
+    channelStats.set(msg.channel.id, { energy: 50, lastActive: Date.now(), msgBuffer: [] });
+  }
+  const cStats = channelStats.get(msg.channel.id);
+  cStats.msgBuffer.push(`${user.username}: ${content}`);
+  if (cStats.msgBuffer.length > 10) cStats.msgBuffer.shift();
 
   // Quick Gender Check
   const contentLower = content.toLowerCase();
@@ -602,11 +607,11 @@ dont be mid or ill ghost u 💀`
     return msg.reply("gender batana pta hai? usage: !gender male ya female.");
   }
 
-  // index.js (Inside client.on('messageCreate', ...))
+  // MENTION HANDLING & AUTO-ASK
+  const isMentioned = msg.mentions.has(client.user.id);
 
-  // ASK COMMAND (UNIFIED WITH FUNCTION CALLING)
-  if (content.startsWith("!ask")) {
-    const q = content.slice(4).trim();
+  if (content.startsWith("!ask") || isMentioned) {
+    let q = content.startsWith("!ask") ? content.slice(4).trim() : content.replace(/<@!?\d+>/g, "").trim();
     const id = msg.author.id;
 
     if (!q) {
@@ -641,6 +646,7 @@ dont be mid or ill ghost u 💀`
         let systemPrompt = `
 tu sanvi mishra hai. 19 saal ki desi goth laundi. delhi NCR. YEAR: 2026.
 USER_INFO: { name: "${user.username}", gender: "${stats.gender}" }
+RECENT_CONTEXT: [${cStats.msgBuffer.join(" | ")}]
 CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
 
 **STRICT REALISM (NO BOT/RP VIBES)**
@@ -918,6 +924,29 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
       return msg.reply("🧹 **Universal Reset Done.** Saari memory flush kar di pookie. ✨");
     } catch {
       return msg.reply("❌ Reset failed.");
+    }
+  }
+
+  // --- PASSIVE AUTONOMOUS INVOLVEMENT ---
+  const dramaKeywords = ["bore", "toxic", "lafda", "drama", "sanvi", "bc", "college", "pyaar"];
+  const hasDrama = dramaKeywords.some(kw => content.toLowerCase().includes(kw));
+  const passiveChance = hasDrama ? 0.15 : 0.02; // 15% if drama, 2% base
+
+  if (Math.random() < passiveChance && !content.startsWith("!") && !isMentioned) {
+    const passiveQ = `Context check: ${content}`;
+    try {
+      // Re-using simplified LLM call for passive comment
+      const passivePrompt = [
+        {
+          role: "system", content: `tu sanvi mishra hai. desi goth girl. RECENT_CONTEXT: [${cStats.msgBuffer.join(" | ")}]. 
+        in logon ki baaton mein achanak se jump kar aur kuch ek dum toxic/dry ya sassy bol. 1 line max. lowercase. no bold. no action words. 
+        don't be helpful. be an unbothered bystander who roasts them.` },
+        { role: "user", content: passiveQ }
+      ];
+      const reply = await generateResponse(passivePrompt);
+      if (reply) await replyChunks(msg, reply, content.length);
+    } catch (err) {
+      console.error("Passive involvement error:", err);
     }
   }
 
