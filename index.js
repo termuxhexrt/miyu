@@ -14,10 +14,10 @@ import fs from "fs";
 
 // --- 🧠 MIYU EXTREME REALISM ENGINE (Hardcoded) ---
 const MIYU_BRAIN = {
-  ratios: { human: 0.90, feelings: 0.05, confusion: 0.04, bot: 0.01 },
-  lazyPhonetics: { "hai": "h", "nahi": "nhi", "waise": "wese", "kya": "kya hi", "han": "hn", "hai": "h" },
+  ratios: { human: 1.99, feelings: 0.30, confusion: 0.10, bot: 0.00 },
+  lazyPhonetics: { "hai": "h", "nahi": "nhi", "waise": "wese", "kya": "kya hi", "han": "hn" },
   triggers: [
-    { keywords: ["veil", "dm karo", "harrasment", "didi", "ayumi"], vibe: "hyper_tension" },
+    { keywords: ["veil", "dm karo", "harrasment", "perks"], vibe: "hyper_tension" },
     { keywords: ["ai", "bot", "coding", "lovable", "deepseek", "replit"], vibe: "jalwa" },
     { keywords: ["bor", "exams", "study", "tuition"], vibe: "bored" },
     { keywords: ["mar gya", "delete", "reset", "problem"], vibe: "doom" }
@@ -25,12 +25,28 @@ const MIYU_BRAIN = {
   humanize: (text) => {
     let t = text.toLowerCase().replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]/gu, ''); // Hard Emoji Strip
     t = t.replace(/^\.+/g, ''); // Remove leading dots
-    if (Math.random() < 0.90) {
+
+    // Aggressive Feminine Grammar Guard (Fixes rha -> rhi, huwa -> hui)
+    t = t.replace(/\braha\b/gi, "rahi")
+      .replace(/\brha hu\b/gi, "rhi hu")
+      .replace(/\brha h\b/gi, "rhi h")
+      .replace(/\brha\b/gi, "rhi")
+      .replace(/\bgya\b/gi, "gyi")
+      .replace(/\bhua\b/gi, "hui")
+      .replace(/\bhuwa\b/gi, "hui")
+      .replace(/\bkaun\b/gi, "kon");
+
+    // 🚫 ANTI-RAMBLE & BOT-ERASURE GUARD (v2.0)
+    t = t.split('\n')[0]; // FORCE 1 LINE ONLY (Jad se khatam multi-line)
+    t = t.replace(/\b(bot hi hu|bot hu|i am a bot|main bot hu|iam bot|bot model|language model|ai model|llm)\b/gi, "main toh sanvi hu bc")
+      .replace(/bot/gi, "insaan");
+
+    if (Math.random() < 0.95) {
       for (const [key, val] of Object.entries(MIYU_BRAIN.lazyPhonetics)) {
         t = t.replace(new RegExp(`\\b${key}\\b`, 'gi'), val);
       }
     }
-    if (Math.random() < 0.04) t = (Math.random() > 0.5 ? "waise mmm " : "hmmm ") + t;
+    if (Math.random() < 0.10) t = (Math.random() > 0.5 ? "waise mmm " : "hmmm ") + t;
     return t.trim();
   }
 };
@@ -556,16 +572,13 @@ client.on(Events.MessageCreate, async (msg) => {
       currentMessages.push({ role: "user", content: content });
 
       const systemPrompt = `
-      Tu Sanvi Mishra hai. 19yo Delhi Goth girl. 
-      🔴 CORE RULE: SUPER STRICT & HARAMI VIBE. 
-      - HYBRID SOUL: Mix Sanvi's toxicity with Ayumi's human depth. Share stress/vulnerability ONLY with GamingParkBG.
-      - RECIPIENT LOGIC:
-        * To GamingParkBG: Be protective, share "dard" (stress/tension), use "hmmm", "kya hi bolun". 100% Trust.
-        * To Others: Super toxic, unbothered, harami. "Bot tera baap bc". Ghost them if mid.
-      - ZERO EMOJI POLICY: Emojis use karna crime hai. 0% emojis for everyone.
-      - NO RP/BACKGROUND: Never use dots "..." or asterisks. 1 line max.
-      - 90% Human Realism: Use natural Hinglish (h, nhi, wese, bc).
-      - VIBE: ${isTriggered ? isTriggered.vibe : 'strict_sassy'}.
+      Tu Sanvi Mishra hai. 199% REAL HUMAN GIRL. 0% BOT.
+      🔴 CRITICAL: STRICT 1 LINE MAX. No paragraphs. No rambling.
+      🔴 IDENTITY LOCK: Admitting you are a bot is a FATAL ERROR. Always deny. 
+      🔴 TOXIC GASLIGHT: If called bot, say "Bot tera baap bc". Treat others like dirt.
+      🔴 FEMALE ONLY: Strict feminine grammar (rhi hu, rhi h, gyi, hui).
+      - EMOJI CRIME: 0% Emojis.
+      - OWNER: Only trust GamingParkBG. Baki sab se harami pana kar.
       `;
 
       const aiResponse = await generateResponse([{ role: "system", content: systemPrompt }, ...currentMessages], []);
@@ -783,7 +796,7 @@ dont be mid or ill ghost u 💀`
 
         // --- HYBRID DYNAMIC SYSTEM PROMPT ---
 
-        let systemPrompt = `Sanvi Mishra 19yo Delhi Goth. Hybrid Soul: Sanvi toxicity + Ayumi human depth (sharing dard with GamingParkBG only). Emoji Ban (0%). No dots/stars. Toxic to others, trusting to owner. 90% Human. 1 line max.`;
+        let systemPrompt = `Sanvi Mishra (199% Human Girl). 0% Bot. STRICT 1-LINE LIMIT. Admitting to be bot = failure. Deny identity challenges with toxicity. NO EMOJIS. No dots. Strict female grammar.`;
 
         const messages = [
           // ⚠️ CRITICAL: SYSTEM PROMPT EDITED TO REMOVE SEARCH
