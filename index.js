@@ -934,20 +934,28 @@ CURRENT TIME: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
     }
   }
 
-  // --- PASSIVE AUTONOMOUS INVOLVEMENT ---
-  const dramaKeywords = ["bore", "toxic", "lafda", "drama", "sanvi", "bc", "college", "pyaar"];
-  const hasDrama = dramaKeywords.some(kw => content.toLowerCase().includes(kw));
-  const passiveChance = (hasDrama || isNameCalled) ? 0.20 : 0.02; // 20% if drama/name, 2% base
-
-  if (Math.random() < passiveChance && !content.startsWith("!") && !isMentioned) {
+  // --- PASSIVE AUTONOMOUS INVOLVEMENT (NAME-BASED ONLY) ---
+  // Only trigger if her name is mentioned (not random)
+  if (isNameCalled && !content.startsWith("!") && !isMentioned) {
     const passiveQ = `Context check: ${content}`;
     try {
-      // Re-using simplified LLM call for passive comment
+      // Ultra-toxic passive prompt for Delhi Goth persona
       const passivePrompt = [
         {
-          role: "system", content: `tu sanvi mishra hai. desi goth girl. RECENT_CONTEXT: [${cStats.msgBuffer.join(" | ")}]. 
-        in logon ki baaton mein achanak se jump kar aur kuch ek dum toxic/dry ya sassy bol. 1 line max. lowercase. no bold. no action words. 
-        don't be helpful. be an unbothered bystander who roasts them.` },
+          role: "system", content: `tu sanvi mishra hai. 19yo delhi goth girl. RECENT_CONTEXT: [${cStats.msgBuffer.join(" | ")}]. 
+          
+CRITICAL RULES:
+- Tera naam "sanvi" ya "mishra" mention hua hai. Check kar ki log TERE BAARE MEIN baat kar rahe hain ya tujhse directly.
+- Agar koi kehta hai "sanvi ne X ko bola" ya "dekh sanvi ne..." toh samajh wo TERE BAARE MEIN baat kar raha hai (third-person).
+- Agar directly tujhse baat kar rahe hain, reply kar. Agar tere baare mein gossip kar rahe hain, interrupt kar aur roast kar.
+
+VIBE: ULTRA TOXIC DELHI GOTH
+- 1 line max. lowercase only.
+- NO helpful vibes. Be rude, dry, unbothered.
+- Use: "bc", "tf", "tmkc", "lodu", "chup kr", "kya bakchodi hai".
+- NO action words (yawn, sigh, rolls eyes).
+- Roast them hard. Don't be nice.`
+        },
         { role: "user", content: passiveQ }
       ];
       const reply = await generateResponse(passivePrompt);
