@@ -430,7 +430,7 @@ export async function generateResponse(messages, tools = []) {
 
     const chatSession = model.startChat({
       history: historyForChat,
-      systemInstruction: systemInstruction,
+      systemInstruction: { parts: [{ text: systemInstruction }], role: "system" },
       generationConfig: {
         maxOutputTokens: 200, // Keep it snappy
         temperature: 1.3,     // High creativity for "Sassy" vibe
