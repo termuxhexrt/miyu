@@ -382,9 +382,9 @@ export async function generateResponse(messages, tools = []) {
   const toxicKeywords = ["bc", "mc", "tmkc", "mkc", "c-", "lodu", "chut", "randi", "behen", "gaand", "porn", "sexy", "nude", "lund", "fuck", "bitch", "slut", "dick"];
   const isToxic = toxicKeywords.some(word => lastMsg.includes(word));
 
-  // If toxic, use Mistral directly to save Gemini quota. 
-  // (Removed tools.length check so Gemini handles !ask chat)
-  if (isToxic) {
+  // If toxic OR tools required, use Mistral directly
+  // (Gemini doesn't handle tool calling reliably, so Mistral is better for Search/Code)
+  if (isToxic || (tools && tools.length > 0)) {
     return await generateMistralResponse(messages, tools).then(cleanOutput);
   }
 
