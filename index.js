@@ -385,6 +385,7 @@ export async function generateResponse(messages, tools = []) {
   }
 
   // 2. CHAT PATH: Try Gemini 2.5 Flash Lite (The "Human" Brain) first
+  const t0 = Date.now();
   try {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) throw new Error("Gemini Key Missing");
@@ -441,6 +442,7 @@ export async function generateResponse(messages, tools = []) {
     const responseText = result.response.text();
 
     // console.log("✨ Gemini 2.5 SCORING:", responseText.length);
+    logStatus(`google/gemini-2.5-flash-lite`, "✅ PASS", 1, Date.now() - t0);
     return responseText;
 
   } catch (err) {
@@ -450,18 +452,18 @@ export async function generateResponse(messages, tools = []) {
   }
 }
 
+function logStatus(model, status, attempt, ms, reason = "") {
+  const pad = (s, n) => s.toString().padEnd(n);
+  console.log(
+    `| ${pad(model.slice(0, 40), 40)} | ${pad(status, 10)} | ${pad(attempt, 7)} | ${pad(ms + "ms", 8)} | ${reason ? "→ " + reason : ""}`
+  );
+}
+
 // ------------------ MISTRAL AI RESPONSE GENERATOR (LEGACY/FALLBACK) ------------------
 async function generateMistralResponse(messages, tools = []) {
   const retries = 3;
   const retryDelay = 1000;
   const model = "mistral-large-latest";
-
-  function logStatus(model, status, attempt, ms, reason = "") {
-    const pad = (s, n) => s.toString().padEnd(n);
-    console.log(
-      `| ${pad(model.slice(0, 40), 40)} | ${pad(status, 10)} | ${pad(attempt, 7)} | ${pad(ms + "ms", 8)} | ${reason ? "→ " + reason : ""}`
-    );
-  }
 
   // console.log("───────────────────────────────────────────────────────────────────────────────");
   // console.log("| Model Name                               | Status    | Attempt | Time     | Reason");
