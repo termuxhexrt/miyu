@@ -1571,7 +1571,7 @@ async function updateMiyuLearnings() {
         { role: "system", content: "You are Sanvi's sub-conscious. Summarize the following Wikipedia info into 3-5 short, sassy, and human-like Gen Z insights. lowercase only. no headers. just 1-2 lines of text." },
         { role: "user", content: `Wikipedia says this about ${topic}: ${summary}` }
       ];
-      const insights = await generateResponse(learnPrompt);
+      const insights = await generateMistralResponse(learnPrompt);
       if (insights && typeof insights === 'string') {
         global.sanviLearnings = insights;
         // Simplified direct logging for learning loop to avoid conflicts
