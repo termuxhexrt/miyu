@@ -378,7 +378,17 @@ async function replyChunks(msg, text, incomingLength = 0) {
 // ------------------ MISTRAL AI RESPONSE GENERATOR ------------------
 // ------------------ HYBRID BRAIN (GEMINI 2.5 + MISTRAL FALLBACK) ------------------
 export async function generateResponse(messages, tools = []) {
-  // 1. CHAT/PRIMARY PATH: Try Gemini 2.5 Flash Lite first
+  // 1. EXTRACTION & KEYWORD ROUTING
+  const lastMsg = messages.filter(m => m.role === 'user').pop()?.content?.toLowerCase() || "";
+  const toxicKeywords = ["bc", "mc", "tmkc", "mkc", "c-", "lodu", "chut", "randi", "behen", "gaand", "porn", "sexy", "nude", "lund", "fuck", "bitch", "slut", "dick"];
+  const isToxic = toxicKeywords.some(word => lastMsg.includes(word));
+
+  // If toxic or tools required, use Mistral directly to save Gemini quota
+  if (isToxic || (tools && tools.length > 0)) {
+    return await generateMistralResponse(messages, tools).then(cleanOutput);
+  }
+
+  // 2. CHAT/PRIMARY PATH: Try Gemini 2.5 Flash Lite first
   const t0 = Date.now();
   try {
     const geminiKey = process.env.GEMINI_API_KEY;
@@ -395,29 +405,13 @@ export async function generateResponse(messages, tools = []) {
       ]
     });
 
-    // Convert OpenAI-style 'messages' to Gemini content format
-    // Note: Gemini doesn't support 'system' role in `generateContent` history directly in the same way, 
-    // it prefers systemInstruction. We need to extract the system prompt.
     let systemInstruction = "You are Sanvi.";
     const geminiHistory = [];
-    let lastUserMsg = "";
-
     for (const m of messages) {
-      if (m.role === 'system') {
-        systemInstruction = m.content;
-      } else if (m.role === 'user') {
-        lastUserMsg = m.content;
-        geminiHistory.push({ role: 'user', parts: [{ text: m.content }] });
-      } else if (m.role === 'assistant') {
-        geminiHistory.push({ role: 'model', parts: [{ text: m.content }] });
-      }
+      if (m.role === 'system') systemInstruction = m.content;
+      else if (m.role === 'user') geminiHistory.push({ role: 'user', parts: [{ text: m.content }] });
+      else if (m.role === 'assistant') geminiHistory.push({ role: 'model', parts: [{ text: m.content }] });
     }
-
-    // Remove the last user message from history as it goes into generateContent(msg)
-    // Actually, pop() works if we built the history sequentially.
-    // However, the `messages` array from discord logic has the last user message at the end.
-    // Gemini's chat.sendMessage(msg) takes the *new* message. 
-    // So we need to init chat with history *excluding* the last message.
 
     const historyForChat = geminiHistory.slice(0, -1);
     const lastMsgObj = geminiHistory[geminiHistory.length - 1];
@@ -426,24 +420,29 @@ export async function generateResponse(messages, tools = []) {
     const chatSession = model.startChat({
       history: historyForChat,
       systemInstruction: { parts: [{ text: systemInstruction }], role: "system" },
-      generationConfig: {
-        maxOutputTokens: 200, // Keep it snappy
-        temperature: 1.3,     // High creativity for "Sassy" vibe
-      }
+      generationConfig: { maxOutputTokens: 200, temperature: 1.25 }
     });
 
     const result = await chatSession.sendMessage(finalPrompt);
     const responseText = result.response.text();
 
-    // console.log("✨ Gemini 2.5 SCORING:", responseText.length);
     logStatus(`google/gemini-2.5-flash-lite`, "✅ PASS", 1, Date.now() - t0);
-    return responseText;
+    return cleanOutput(responseText);
 
   } catch (err) {
     console.error("⚠️ Gemini Failed (Fallback to Mistral):", err.message.split('\n')[0]);
-    // 3. FALLBACK PATH: Route to Mistral (The "Galiyan/Uncensored" Brain)
-    return await generateMistralResponse(messages, tools);
+    return await generateMistralResponse(messages, tools).then(cleanOutput);
   }
+}
+
+// ------------------ OUTPUT CLEANER (STRICT PERSONA ENFORCEMENT) ------------------
+function cleanOutput(text) {
+  if (typeof text !== 'string') return text;
+  return text
+    .toLowerCase()              // 1. ENFORCE LOWERCASE
+    .replace(/\*\*/g, '')      // 2. REMOVE BOLDING
+    .replace(/[_*~]/g, '')     // 3. REMOVE OTHER MARKDOWN
+    .trim();
 }
 
 function logStatus(model, status, attempt, ms, reason = "") {
@@ -1565,7 +1564,8 @@ async function updateMiyuLearnings() {
         { role: "system", content: "You are Sanvi's sub-conscious. Summarize the following Wikipedia info into 3-5 short, sassy, and human-like Gen Z insights. lowercase only. no headers. just 1-2 lines of text." },
         { role: "user", content: `Wikipedia says this about ${topic}: ${summary}` }
       ];
-      const insights = await generateMistralResponse(learnPrompt);
+      let insights = await generateMistralResponse(learnPrompt);
+      insights = cleanOutput(insights);
       if (insights && typeof insights === 'string') {
         global.sanviLearnings = insights;
         // Simplified direct logging for learning loop to avoid conflicts
