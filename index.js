@@ -338,22 +338,21 @@ async function replyChunks(msg, text, incomingLength = 0) {
   const typingDelay = Math.min(text.length * baseSpeed, 1800);
   await new Promise(r => setTimeout(r, typingDelay));
 
-  // STRICT 1 LINE ENFORCEMENT
-  // Split by newlines, take first line only
-  let reply = text.split(/[\n\r]+/)[0].trim();
+  // Join lines with spaces instead of cutting off everything after first line
+  let reply = text.replace(/[\n\r]+/g, ' ').trim();
 
   // Remove any emojis if somehow present
   reply = reply.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, '');
 
-  // Strict word limit (max 15 words)
+  // Word limit (extended to 25 for natural flow)
   const words = reply.split(/\s+/);
-  if (words.length > 15) {
-    reply = words.slice(0, 15).join(' ');
+  if (words.length > 25) {
+    reply = words.slice(0, 25).join(' ');
   }
 
-  // Max 120 chars
-  if (reply.length > 120) {
-    reply = reply.substring(0, 120);
+  // Max 250 chars (increased from 120)
+  if (reply.length > 250) {
+    reply = reply.substring(0, 250);
   }
 
   // Remove trailing punctuation for abruptness (optional, 50% chance)
