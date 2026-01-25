@@ -453,6 +453,13 @@ export async function generateResponse(messages, tools = []) {
 }
 
 function logStatus(model, status, attempt, ms, reason = "") {
+  // POLYMORPHIC LOGGING: Handle simple string logs from legacy code
+  if (status === undefined) {
+    const time = new Date().toLocaleTimeString("en-IN", { hour12: false });
+    console.log(`[${time}] ⚙️ ${model}`);
+    return;
+  }
+
   const pad = (s, n) => s.toString().padEnd(n);
   console.log(
     `| ${pad(model.slice(0, 40), 40)} | ${pad(status, 10)} | ${pad(attempt, 7)} | ${pad(ms + "ms", 8)} | ${reason ? "→ " + reason : ""}`
