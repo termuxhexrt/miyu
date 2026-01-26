@@ -490,7 +490,7 @@ async function generateMistralResponse(messages, tools = []) {
      const payload = {
   model: model,
   messages,
-  temperature: 1.4,      // Thoda aur unpredictable
+  temperature: 1.3,      // Thoda aur unpredictable
   max_tokens: 2048,      // 2408 se kam kar de, warna context overflow ho sakta hai
   top_p: 0.95,
   presence_penalty: 0.8, // Yeh IMPORTANT hai - repetition avoid karega
