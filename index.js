@@ -377,66 +377,12 @@ async function replyChunks(msg, text, incomingLength = 0) {
 // ------------------ MISTRAL AI RESPONSE GENERATOR ------------------
 // ------------------ HYBRID BRAIN (GEMINI 2.5 + MISTRAL FALLBACK) ------------------
 export async function generateResponse(messages, tools = []) {
-  // 1. EXTRACTION & KEYWORD ROUTING
-  const lastMsg = messages.filter(m => m.role === 'user').pop()?.content?.toLowerCase() || "";
-  const toxicKeywords = ["bc", "mc", "tmkc", "mkc", "c-", "lodu", "chut", "randi", "behen", "gaand", "porn", "sexy", "nude", "lund", "fuck", "bitch", "slut", "dick"];
-  const isToxic = toxicKeywords.some(word => lastMsg.includes(word));
-
-  // If toxic OR tools required, use Mistral directly
-  // (Gemini doesn't handle tool calling reliably, so Mistral is better for Search/Code)
-  if (isToxic || (tools && tools.length > 0)) {
-    return await generateMistralResponse(messages, tools).then(cleanOutput);
-  }
-
-  // 2. CHAT/PRIMARY PATH: Try Gemini 2.5 Flash Lite first
-  const t0 = Date.now();
+  // DIRECT MISTRAL ONLY - No Gemini fallback issues
   try {
-    const geminiKey = process.env.GEMINI_API_KEY;
-    if (!geminiKey) throw new Error("Gemini Key Missing");
-
-    const genAI = new GoogleGenerativeAI(geminiKey);
-    const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      safetySettings: [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      ]
-    });
-
-    let systemInstruction = "You are Sanvi.";
-    const geminiHistory = [];
-    for (const m of messages) {
-      if (m.role === 'system') systemInstruction = m.content;
-      else if (m.role === 'user') geminiHistory.push({ role: 'user', parts: [{ text: m.content }] });
-      else if (m.role === 'assistant') geminiHistory.push({ role: 'model', parts: [{ text: m.content }] });
-    }
-
-    const historyForChat = geminiHistory.slice(0, -1);
-    const lastMsgObj = geminiHistory[geminiHistory.length - 1];
-    const finalPrompt = lastMsgObj ? lastMsgObj.parts[0].text : "";
-
-    const chatSession = model.startChat({
-      history: historyForChat,
-      systemInstruction: { parts: [{ text: systemInstruction }], role: "system" },
-      generationConfig: { maxOutputTokens: 200, temperature: 1.25 }
-    });
-
-    const result = await chatSession.sendMessage(finalPrompt);
-    const responseText = result.response.text();
-
-    // Safety fallback if Gemini is empty or weird
-    if (!responseText || responseText.trim().length === 0) {
-      throw new Error("Empty Gemini response");
-    }
-
-    logStatus(`google/gemini-2.5-flash-lite`, "✅ PASS", 1, Date.now() - t0);
-    return cleanOutput(responseText);
-
-  } catch (err) {
-    console.error("⚠️ Gemini Failed (Fallback to Mistral):", err.message.split('\n')[0]);
     return await generateMistralResponse(messages, tools).then(cleanOutput);
+  } catch (err) {
+    console.error("⚠️ Mistral Failed:", err.message);
+    throw err; // Re-throw so caller can handle
   }
 }
 
@@ -2758,7 +2704,11 @@ Agar tere response mein "hu" (auxiliary verb for self-action) hai, toh galat hai
 
     } catch (err) {
       console.error("❌ !ask command error:", err);
-      await msg.reply("ek second... dimag hang ho gaya. thodi der baad bolna cutie.");
+      if (err.message && err.message.includes("failed all attempts")) {
+        await msg.reply("mistral api down hai yaar... thodi der baad try kar 💀");
+      } else {
+        await msg.reply("ek second... dimag hang ho gaya. thodi der baad bolna cutie.");
+      }
     }
     return;
   }
