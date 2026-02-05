@@ -377,12 +377,12 @@ async function replyChunks(msg, text, incomingLength = 0) {
 // ------------------ MISTRAL AI RESPONSE GENERATOR ------------------
 // ------------------ HYBRID BRAIN (GEMINI 2.5 + MISTRAL FALLBACK) ------------------
 export async function generateResponse(messages, tools = []) {
-  // DIRECT MISTRAL ONLY - No Gemini fallback issues
+  // DIRECT OPENROUTER - No Gemini, No Mistral official API
   try {
     return await generateMistralResponse(messages, tools).then(cleanOutput);
   } catch (err) {
-    console.error("⚠️ Mistral Failed:", err.message);
-    throw err; // Re-throw so caller can handle
+    console.error("⚠️ OpenRouter Failed:", err.message);
+    throw err;
   }
 }
 
@@ -415,78 +415,93 @@ function logStatus(model, status, attempt, ms, reason = "") {
 
 // ------------------ MISTRAL AI RESPONSE GENERATOR (LEGACY/FALLBACK) ------------------
 async function generateMistralResponse(messages, tools = []) {
-  const retries = 3;
+  const retries = 2;
   const retryDelay = 1000;
-  const model = "mistral-large-latest";
 
-  // console.log("───────────────────────────────────────────────────────────────────────────────");
-  // console.log("| Model Name                               | Status    | Attempt | Time     | Reason");
-  // console.log("───────────────────────────────────────────────────────────────────────────────");
+  // FREE MODELS from OpenRouter - No cost, just rate limits
+  const freeModels = [
+    "huggingfaceh4/zephyr-7b-beta:free",
+    "mistralai/mistral-7b-instruct:free", 
+    "nousresearch/hermes-2-mixtral-8x7b-dpo:free",
+    "gryphe/mythomax-l2-13b:free"
+  ];
 
-  for (let i = 1; i <= retries; i++) {
-    const t0 = Date.now();
-    try {
-      const endpoint = "https://api.mistral.ai/v1/chat/completions";
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.MISTRAL_API_KEY}`,
-      };
-
-      // Build the base payload
-     const payload = {
-  model: model,
-  messages,
-  temperature: 1.3,      // Thoda aur unpredictable
-  max_tokens: 2048,      // 2408 se kam kar de, warna context overflow ho sakta hai
-  top_p: 0.95,
-  presence_penalty: 0.8, // Yeh IMPORTANT hai - repetition avoid karega
-  frequency_penalty: 0.8 // "Ja na" "chutiye" baar baar repeat nahi karegi
-};
-      // Conditionally add tools if they are provided (only for Mistral)
-      if (tools && tools.length > 0) {
-        payload.tools = tools;
-        payload.tool_choice = "auto"; // Assuming you want auto tool usage
-      }
-
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`HTTP ${res.status} ${res.statusText}: ${errorText}`);
-      }
-
-      const data = await res.json();
-      const message = data?.choices?.[0]?.message;
-
-      if (!message || (!message.content && !message.tool_calls)) {
-        throw new Error("Empty content or missing tool call in response");
-      }
-
-      const ms = Math.abs(Date.now() - t0);
-      logStatus(`mistralai/${model}`, "✅ PASS", i, ms);
-
-      // Handle Tool Call vs. Content
-      if (message.tool_calls && message.tool_calls.length > 0) {
-        return {
-          content: message.content, // Tool call ke saath content bhi ho sakta hai
-          tool_call: message.tool_calls[0]
+  // Try each free model
+  for (const model of freeModels) {
+    for (let i = 1; i <= retries; i++) {
+      const t0 = Date.now();
+      try {
+        const endpoint = "https://openrouter.ai/api/v1/chat/completions";
+        const headers = {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.OPENROUTER_KEY}`,
+          "HTTP-Referer": "https://discord.com",
+          "X-Title": "Sanvi Mishra Bot"
         };
+
+        const payload = {
+          model: model,
+          messages,
+          temperature: 1.3,
+          max_tokens: 2048,
+          top_p: 0.95,
+          presence_penalty: 0.8,
+          frequency_penalty: 0.8
+        };
+
+        if (tools && tools.length > 0) {
+          payload.tools = tools;
+          payload.tool_choice = "auto";
+        }
+
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          if (res.status === 429 || errorText.includes("rate limit")) {
+            console.log(`⚠️ ${model} rate limited, trying next model...`);
+            break;
+          }
+          throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+
+        const data = await res.json();
+        const message = data?.choices?.[0]?.message;
+
+        if (!message || (!message.content && !message.tool_calls)) {
+          throw new Error("Empty content");
+        }
+
+        const ms = Date.now() - t0;
+        logStatus(`openrouter/${model.split(':')[0]}`, "✅ PASS", i, ms);
+
+        if (message.tool_calls && message.tool_calls.length > 0) {
+          return {
+            content: message.content,
+            tool_call: message.tool_calls[0]
+          };
+        }
+
+        return message.content;
+
+      } catch (err) {
+        const ms = Date.now() - t0;
+        logStatus(`openrouter/${model.split(':')[0]}`, "❌ FAIL", i, ms, err.message);
+
+        if (err.message.includes("Rate limit") || err.message.includes("429") || err.message.includes("rate limit")) {
+          break;
+        }
+
+        if (i < retries) await new Promise(r => setTimeout(r, retryDelay));
       }
-
-      return message.content;
-
-    } catch (err) {
-      const ms = Math.abs(Date.now() - t0);
-      logStatus(`mistralai/${model}`, "❌ FAIL", i, ms, err.message);
-      if (i < retries) await new Promise((r) => setTimeout(r, retryDelay));
     }
   }
-  // console.log("───────────────────────────────────────────────────────────────────────────────");
-  throw new Error(`❌ Model mistralai/${model} failed all attempts.`);
+
+  throw new Error("❌ All free models failed or rate limited. Try again in a minute.");
 }
 
 
@@ -2704,10 +2719,10 @@ Agar tere response mein "hu" (auxiliary verb for self-action) hai, toh galat hai
 
     } catch (err) {
       console.error("❌ !ask command error:", err);
-      if (err.message && err.message.includes("failed all attempts")) {
-        await msg.reply("mistral api down hai yaar... thodi der baad try kar 💀");
+      if (err.message && err.message.includes("rate limited")) {
+        await msg.reply("sab models busy hain yaar... 1 min ruk ja 💀");
       } else {
-        await msg.reply("ek second... dimag hang ho gaya. thodi der baad bolna cutie.");
+        await msg.reply("system lag gaya... thodi der baad try kar cutie.");
       }
     }
     return;
